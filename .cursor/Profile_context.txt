@@ -1,0 +1,354 @@
+# Profile Page Context
+
+## Page Overview
+The Profile page allows authenticated users to view and manage their account information, update personal details, view order history, and manage account preferences. This is a protected page that requires user authentication.
+
+## Page Features
+
+### 1. Profile Information
+- **User Avatar**: Profile picture with upload functionality
+- **Personal Details**: Name, email, mobile number
+- **Account Stats**: Member since, total orders, total spent
+- **Edit Profile**: Button to edit personal information
+
+### 2. Profile Management
+- **Edit Form**: Inline editing or modal form
+- **Avatar Upload**: Image upload with preview
+- **Password Change**: Secure password update
+- **Account Settings**: Preferences and notifications
+
+### 3. Account Actions
+- **Logout**: Sign out functionality
+- **Delete Account**: Account deletion with confirmation
+- **Privacy Settings**: Data privacy controls
+- **Notification Preferences**: Email/SMS preferences
+
+### 4. Quick Actions
+- **View Orders**: Link to order history
+- **Track Orders**: Link to active orders
+- **Saved Items**: Wishlist functionality (future)
+- **Address Book**: Delivery addresses (future)
+
+## Data Requirements
+
+### User Profile Data
+```javascript
+{
+  id: "integer",
+  name: "string",
+  email: "string",
+  mobile: "string",
+  avatar_url: "string",
+  created_at: "timestamp",
+  updated_at: "timestamp"
+}
+```
+
+### Account Statistics
+```javascript
+{
+  totalOrders: "integer",
+  totalSpent: "numeric",
+  memberSince: "timestamp",
+  lastOrderDate: "timestamp"
+}
+```
+
+## State Management
+
+### Required Stores
+- **useAuthStore**: User authentication and profile data
+- **useOrderStore**: Order history and statistics
+- **useProfileStore**: Profile management operations
+
+### Key Functions
+```javascript
+// From useAuthStore
+const {
+  user,
+  updateProfile,
+  signOut,
+  isAuthenticated
+} = useAuthStore()
+
+// From useOrderStore
+const {
+  userOrders,
+  orderStats,
+  fetchUserOrders
+} = useOrderStore()
+
+// From useProfileStore
+const {
+  updateAvatar,
+  changePassword,
+  deleteAccount
+} = useProfileStore()
+```
+
+## Component Structure
+
+### Main Components
+1. **ProfileHeader**: User avatar and basic info
+2. **ProfileDetails**: Personal information display
+3. **AccountStats**: Order statistics and metrics
+4. **ProfileActions**: Edit, logout, delete actions
+5. **QuickActions**: Links to other user features
+
+### Sub-Components
+- **AvatarUpload**: Profile picture upload
+- **ProfileForm**: Edit profile form
+- **PasswordChange**: Password update form
+- **AccountStats**: Statistics display
+- **ActionButtons**: Profile action buttons
+
+## Profile Management
+
+### Update Profile
+```javascript
+const handleUpdateProfile = async (formData) => {
+  try {
+    setIsLoading(true)
+    
+    const { data, error } = await updateProfile({
+      name: formData.name,
+      mobile: formData.mobile,
+      avatar_url: formData.avatar_url
+    })
+    
+    if (error) {
+      throw error
+    }
+    
+    toast.success('Profile updated successfully!')
+    setEditMode(false)
+    
+  } catch (error) {
+    toast.error('Failed to update profile')
+  } finally {
+    setIsLoading(false)
+  }
+}
+```
+
+### Avatar Upload
+```javascript
+const handleAvatarUpload = async (file) => {
+  try {
+    setIsUploading(true)
+    
+    // Upload to Supabase Storage
+    const { data, error } = await supabase.storage
+      .from('avatars')
+      .upload(`${user.id}/${file.name}`, file)
+    
+    if (error) throw error
+    
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(`${user.id}/${file.name}`)
+    
+    // Update profile
+    await updateProfile({ avatar_url: publicUrl })
+    
+    toast.success('Avatar updated successfully!')
+    
+  } catch (error) {
+    toast.error('Failed to upload avatar')
+  } finally {
+    setIsUploading(false)
+  }
+}
+```
+
+## Account Statistics
+
+### Order Statistics
+```javascript
+const calculateOrderStats = (orders) => {
+  const totalOrders = orders.length
+  const totalSpent = orders.reduce((sum, order) => sum + order.total_amount, 0)
+  const memberSince = user.created_at
+  const lastOrder = orders.length > 0 ? orders[0].created_at : null
+  
+  return {
+    totalOrders,
+    totalSpent,
+    memberSince,
+    lastOrderDate: lastOrder
+  }
+}
+```
+
+### Account Metrics
+- **Total Orders**: Number of completed orders
+- **Total Spent**: Total amount spent on orders
+- **Member Since**: Account creation date
+- **Last Order**: Date of most recent order
+
+## UI/UX Guidelines
+
+### Profile Layout
+- **Mobile**: Single column, stacked sections
+- **Tablet**: Two-column layout with stats sidebar
+- **Desktop**: Full layout with sidebar navigation
+
+### Avatar Management
+- **Upload Button**: Clear upload interface
+- **Preview**: Image preview before upload
+- **Crop Tool**: Image cropping functionality
+- **Remove Option**: Remove avatar option
+
+### Loading States
+- **Profile Loading**: Skeleton for profile data
+- **Avatar Upload**: Progress indicator
+- **Form Submission**: Button loading states
+- **Data Fetching**: Loading spinners
+
+## Form Validation
+
+### Profile Update Validation
+```javascript
+const validateProfileUpdate = (data) => {
+  const errors = {}
+  
+  if (!data.name) {
+    errors.name = 'Name is required'
+  } else if (data.name.length < 2) {
+    errors.name = 'Name must be at least 2 characters'
+  }
+  
+  if (!data.mobile) {
+    errors.mobile = 'Mobile number is required'
+  } else if (!isValidMobile(data.mobile)) {
+    errors.mobile = 'Please enter a valid mobile number'
+  }
+  
+  return errors
+}
+```
+
+### Password Change Validation
+- Current password verification
+- New password strength requirements
+- Password confirmation matching
+- Minimum password length
+
+## Security Features
+
+### Profile Security
+- Email cannot be changed (security)
+- Password change requires current password
+- Avatar upload size and format limits
+- Data validation and sanitization
+
+### Account Protection
+- Delete account confirmation
+- Password confirmation for sensitive actions
+- Session timeout handling
+- Secure data transmission
+
+## Error Handling
+
+### Profile Update Errors
+- Invalid form data
+- Network connectivity issues
+- Storage upload failures
+- Database update errors
+
+### User Feedback
+- Success notifications
+- Error messages with suggestions
+- Loading indicators
+- Confirmation dialogs
+
+## Accessibility Features
+
+### Form Accessibility
+- Proper form labels
+- Error message associations
+- Required field indicators
+- Keyboard navigation support
+
+### Avatar Management
+- Alt text for avatar images
+- Upload button descriptions
+- Progress announcements
+- Error message accessibility
+
+## Performance Considerations
+
+### Data Loading
+- Lazy load profile data
+- Cache user information
+- Optimize avatar loading
+- Efficient form updates
+
+### Image Optimization
+- Compress avatar uploads
+- Responsive image sizes
+- Lazy loading for images
+- WebP format support
+
+## Testing Scenarios
+
+### Profile Management
+1. **View Profile**: Load profile → display information
+2. **Edit Profile**: Edit details → save changes
+3. **Upload Avatar**: Upload image → update profile
+4. **Change Password**: Update password → confirm change
+
+### Edge Cases
+- Invalid form data
+- Network connectivity issues
+- Large image uploads
+- Account deletion
+
+### User Flows
+1. **Authenticated User**: Login → view profile
+2. **Profile Update**: Edit → save → confirm
+3. **Avatar Upload**: Upload → crop → save
+4. **Account Deletion**: Confirm → delete → logout
+
+## Implementation Notes
+
+### File Location
+```
+src/pages/Profile/Profile.jsx
+```
+
+### Dependencies
+- React Hook Form for form management
+- React Router for navigation
+- Sonner for notifications
+- Zustand stores for state management
+- Image upload library (optional)
+
+### Key Functions to Implement
+- `handleUpdateProfile(formData)`: Update profile information
+- `handleAvatarUpload(file)`: Upload profile picture
+- `handlePasswordChange(data)`: Change password
+- `handleDeleteAccount()`: Delete user account
+- `handleLogout()`: Sign out user
+
+### Protected Route
+```javascript
+// Ensure user is authenticated
+if (!isAuthenticated) {
+  navigate('/login', { state: { redirect: '/profile' } })
+  return null
+}
+```
+
+### Avatar Upload Configuration
+```javascript
+const avatarUploadConfig = {
+  maxSize: 5 * 1024 * 1024, // 5MB
+  allowedTypes: ['image/jpeg', 'image/png', 'image/webp'],
+  storageBucket: 'avatars',
+  compression: true
+}
+```
+
+This context provides comprehensive guidance for implementing the Profile page with full user profile management and account customization features. 

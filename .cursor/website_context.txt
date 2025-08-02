@@ -1,0 +1,376 @@
+# Ecommerce Website Context
+
+## Project Overview
+This is a React-based ecommerce website that showcases products from a Supabase database. The application features user authentication, product browsing, cart management, order tracking, and WhatsApp integration for order completion.
+
+## Tech Stack
+- **Frontend**: React 19.1.0 with Vite
+- **Styling**: Tailwind CSS 4.1.11 (White theme only)
+- **UI Components**: Shadcn/ui components
+- **Database**: Supabase (PostgreSQL)
+- **State Management**: Zustand
+- **Routing**: React Router DOM 7.7.0
+- **Forms**: React Hook Form with Zod validation
+- **Icons**: Lucide React + React Icons
+- **Notifications**: Sonner
+
+## Supabase Project Details
+- **Project URL**: https://owxvofhvznnblayafocw.supabase.co
+- **Project ID**: owxvofhvznnblayafocw
+- **Database**: PostgreSQL with Row Level Security (RLS)
+- **Authentication**: Supabase Auth with custom user profiles
+- **Storage**: Supabase Storage for product images and user avatars
+
+## Core Features
+
+### 1. Product Showcase
+- Display products from Supabase database
+- Product cards with images, titles, prices, descriptions
+- Product filtering and search functionality
+- Product detail pages with full information
+- Product collections/categories support
+
+### 2. User Authentication
+- User registration and login via Supabase Auth
+- Profile management with avatar support
+- Order history tracking
+- User preferences and settings
+
+### 3. Shopping Cart
+- Add/remove products from cart
+- Quantity management with validation
+- Cart persistence across sessions
+- Cart summary with total calculation
+
+### 4. Order Management
+- Order placement and tracking
+- Order status updates (pending, confirmed, processing, completed, cancelled)
+- WhatsApp integration for order completion
+- Order history for authenticated users
+
+### 5. Review System
+- Users can leave reviews after purchasing
+- Star rating system (1-5 stars)
+- Review text and image uploads
+- Review verification system
+- Review moderation
+
+### 6. WhatsApp Integration
+- Cart contents sent to WhatsApp
+- Order details formatted for WhatsApp
+- Direct messaging for order completion
+- Order tracking via WhatsApp
+- WhatsApp sent status tracking
+
+## Database Schema (Supabase)
+
+### Tables Structure:
+
+#### 1. **products** (RLS: Disabled)
+- `id` (uuid, primary key, default: gen_random_uuid())
+- `collection_id` (uuid, foreign key to collections.id)
+- `images` (text[], array of image URLs)
+- `name` (text, NOT NULL)
+- `price` (numeric, NOT NULL)
+- `discount` (numeric, default: 0)
+- `hide` (boolean, default: false)
+- `created_at` (timestamptz, default: timezone('utc'::text, now()))
+- `overview` (jsonb, comment: "Product overview and specifications")
+- `care_and_instructions` (jsonb, comment: "Care and maintenance instructions")
+- `delivery_installation` (jsonb, comment: "Delivery and installation information")
+- `terms_and_conditions` (jsonb, comment: "Terms and conditions for the product")
+- `faq` (jsonb, comment: "Frequently asked questions about the product")
+- `disclaimer` (jsonb, comment: "Product disclaimers and legal information")
+- `product_overview` (jsonb, default: '{"blocks": []}', comment: "Product overview information")
+
+#### 2. **users** (RLS: Enabled)
+- `id` (integer, primary key, auto-increment)
+- `name` (varchar, NOT NULL)
+- `email` (varchar, NOT NULL, UNIQUE)
+- `mobile` (varchar, NOT NULL)
+- `avatar_url` (text, nullable)
+- `created_at` (timestamptz, default: now())
+- `updated_at` (timestamptz, default: now())
+
+#### 3. **collections** (RLS: Enabled)
+- `id` (uuid, primary key, default: gen_random_uuid())
+- `image_url` (text, NOT NULL)
+- `name` (text, NOT NULL)
+- `description` (text, nullable)
+- `no_products` (integer, default: 0)
+- `hide` (boolean, default: false)
+- `created_at` (timestamptz, default: timezone('utc'::text, now()))
+
+#### 4. **cart** (RLS: Disabled)
+- `id` (uuid, primary key, default: gen_random_uuid())
+- `user_id` (integer, foreign key to users.id, NOT NULL)
+- `product_id` (uuid, foreign key to products.id, NOT NULL)
+- `quantity` (integer, NOT NULL, default: 1, check: quantity > 0)
+- `created_at` (timestamptz, default: now())
+- `updated_at` (timestamptz, default: now())
+
+#### 5. **orders** (RLS: Disabled)
+- `id` (uuid, primary key, default: gen_random_uuid())
+- `user_id` (integer, foreign key to users.id, NOT NULL)
+- `product_id` (uuid, foreign key to products.id, NOT NULL)
+- `quantity` (integer, NOT NULL, default: 1, check: quantity > 0)
+- `requirements` (text, nullable)
+- `order_status` (varchar, NOT NULL, default: 'pending', check: status in ['pending', 'confirmed', 'processing', 'completed', 'cancelled'])
+- `is_completed` (boolean, default: false)
+- `whatsapp_sent` (boolean, default: false)
+- `whatsapp_sent_at` (timestamptz, nullable)
+- `notes` (text, nullable)
+- `created_at` (timestamptz, default: now())
+- `updated_at` (timestamptz, default: now())
+
+#### 6. **reviews** (RLS: Disabled)
+- `id` (uuid, primary key, default: gen_random_uuid())
+- `user_id` (integer, foreign key to users.id, NOT NULL)
+- `product_id` (uuid, foreign key to products.id, NOT NULL)
+- `rating` (integer, NOT NULL, check: rating >= 1 AND rating <= 5)
+- `comment` (text, nullable)
+- `image_url` (text, nullable)
+- `verified` (boolean, default: false)
+- `created_at` (timestamptz, default: now())
+- `updated_at` (timestamptz, default: now())
+
+#### 7. **login_logs** (RLS: Disabled)
+- `id` (uuid, primary key, default: gen_random_uuid())
+- `username` (varchar, NOT NULL)
+- `login_time` (timestamptz, default: now())
+- `logout_time` (timestamptz, nullable)
+- `location` (varchar, nullable)
+- `ip_address` (inet, nullable)
+- `user_agent` (text, nullable)
+- `session_duration` (interval, nullable)
+- `is_suspicious` (boolean, default: false)
+- `suspicious_reason` (text, nullable)
+- `created_at` (timestamptz, default: now())
+
+### Database Relationships:
+- **products** → **collections** (collection_id)
+- **cart** → **users** (user_id)
+- **cart** → **products** (product_id)
+- **orders** → **users** (user_id)
+- **orders** → **products** (product_id)
+- **reviews** → **users** (user_id)
+- **reviews** → **products** (product_id)
+
+## Component Structure
+
+### Pages:
+- **Home**: Product showcase, featured products, categories
+- **Products**: Product listing with filters and search
+- **ProductDetail**: Individual product view with reviews
+- **Cart**: Shopping cart management
+- **Login/Register**: User authentication
+- **Profile**: User profile and order history
+- **MyOrders**: Order tracking and history
+- **Checkout**: Order confirmation and WhatsApp redirect
+
+### Components:
+- **ProductCard**: Individual product display
+- **ProductGrid**: Product listing layout
+- **CartItem**: Cart item component
+- **ReviewCard**: Product review display
+- **Rating**: Star rating component
+- **SearchBar**: Product search functionality
+- **CategoryFilter**: Product filtering
+- **WhatsAppButton**: Order completion button
+- **CollectionCard**: Product collection display
+
+## State Management (Zustand)
+
+### Stores:
+1. **useAuthStore**: User authentication state with Supabase Auth
+2. **useCartStore**: Shopping cart management with persistence
+3. **useProductStore**: Product data and filtering
+4. **useOrderStore**: Order management and status tracking
+5. **useReviewStore**: Review system with verification
+6. **useCollectionStore**: Product collections management
+
+## UI/UX Guidelines
+
+### Design Principles:
+- **White Theme Only**: Clean, minimal design
+- **Modern Aesthetics**: Contemporary ecommerce design
+- **Mobile-First**: Responsive design for all devices
+- **Accessibility**: WCAG compliant components
+- **Performance**: Optimized loading and interactions
+
+### Color Palette:
+- Primary: White (#FFFFFF)
+- Secondary: Light Gray (#F8F9FA)
+- Accent: Blue (#3B82F6)
+- Text: Dark Gray (#1F2937)
+- Border: Light Gray (#E5E7EB)
+
+### Typography:
+- Headings: Inter font family
+- Body: System font stack
+- Consistent spacing and sizing
+
+## WhatsApp Integration
+
+### Message Format:
+```
+🛒 *New Order Request*
+
+*Customer:* [Customer Name]
+*Phone:* [Customer Mobile]
+*Email:* [Customer Email]
+
+*Order Items:*
+• [Product Name] - Qty: [X] - Price: $[X]
+• [Product Name] - Qty: [X] - Price: $[X]
+...
+
+*Requirements:* [Customer Requirements]
+*Total Amount:* $[Total]
+
+*Order ID:* [UUID]
+
+Please contact the customer to complete the order.
+```
+
+### WhatsApp Tracking:
+- `whatsapp_sent` boolean flag in orders table
+- `whatsapp_sent_at` timestamp for tracking
+- Automatic status updates after WhatsApp communication
+
+## Development Workflow
+
+### 1. Database Setup ✅
+- Supabase project created and configured
+- Tables created with proper relationships
+- Row Level Security (RLS) configured for users and collections
+- Foreign key constraints established
+
+### 2. Component Development
+- Build reusable UI components
+- Implement responsive design
+- Add accessibility features
+- Test component interactions
+
+### 3. State Management
+- Implement Zustand stores
+- Connect components to stores
+- Handle data persistence
+- Manage loading states
+
+### 4. API Integration
+- Connect to Supabase
+- Handle authentication
+- Manage data fetching
+- Error handling
+
+### 5. WhatsApp Integration
+- Format cart data for WhatsApp
+- Generate order messages
+- Handle WhatsApp redirects
+- Track order status
+
+## File Structure
+```
+src/
+├── components/
+│   ├── ui/           # Shadcn/ui components
+│   ├── layout/       # Layout components
+│   └── common/       # Shared components
+├── pages/
+│   ├── Home/
+│   ├── Products/
+│   ├── ProductDetail/
+│   ├── Cart/
+│   ├── Login/
+│   ├── Register/
+│   ├── Profile/
+│   ├── MyOrders/
+│   └── Checkout/
+├── stores/
+│   ├── useAuthStore.js
+│   ├── useCartStore.js
+│   ├── useProductStore.js
+│   ├── useOrderStore.js
+│   ├── useReviewStore.js
+│   └── useCollectionStore.js
+├── lib/
+│   ├── utils.js
+│   ├── supabase.js
+│   └── whatsapp.js
+├── hooks/
+│   ├── useProducts.js
+│   ├── useCart.js
+│   ├── useAuth.js
+│   └── useOrders.js
+└── styles/
+    └── globals.css
+```
+
+## Key Implementation Notes
+
+### Authentication:
+- Use Supabase Auth with custom user profiles
+- JWT token management
+- Protected routes
+- User session persistence
+- Login logging for security
+
+### Cart Management:
+- Local storage backup
+- Real-time updates
+- Quantity validation (quantity > 0)
+- Price calculations with discount support
+
+### Product Management:
+- Image optimization and lazy loading
+- Search and filtering
+- Pagination
+- Collection/category support
+- Rich product data (overview, care instructions, etc.)
+
+### Review System:
+- Post-purchase reviews only
+- Image upload support
+- Rating validation (1-5 stars)
+- Verification system
+- Moderation capabilities
+
+### WhatsApp Integration:
+- Message formatting with requirements
+- URL encoding
+- Order tracking with timestamps
+- Customer communication flow
+- Status tracking in database
+
+## Environment Variables
+```
+VITE_SUPABASE_URL=https://owxvofhvznnblayafocw.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93eHZvZmh2em5uYmxheWFmb2N3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxNzQyOTksImV4cCI6MjA2ODc1MDI5OX0.Fejcjupp9hHddXTg296M0H7Hvsx2wNrVER5LvkwTUO0
+VITE_WHATSAPP_NUMBER=your_whatsapp_number
+VITE_WHATSAPP_MESSAGE_TEMPLATE=your_message_template
+```
+
+## Performance Considerations
+- Image optimization and lazy loading
+- Code splitting and lazy routing
+- Efficient state management
+- Database query optimization
+- Caching strategies
+
+## Security Measures
+- Row Level Security (RLS) in Supabase for users and collections
+- Input validation and sanitization
+- XSS protection
+- CSRF protection
+- Secure authentication flow
+- Login logging for suspicious activity detection
+
+## Database Statistics
+- **Total Tables**: 7 (products, users, collections, cart, orders, reviews, login_logs)
+- **RLS Enabled**: users, collections
+- **Foreign Key Relationships**: 6 relationships established
+- **Data Types**: UUID, Integer, Text, Numeric, Boolean, Timestamp, JSONB, Arrays
+- **Constraints**: Check constraints for quantity > 0, rating 1-5, order status validation
+
+This context provides a comprehensive understanding of the ecommerce website requirements, architecture, and implementation details for AI-assisted development, based on the actual Supabase database schema.

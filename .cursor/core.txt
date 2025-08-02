@@ -1,0 +1,201 @@
+# Core Project Context
+
+## Project Overview
+This is a React-based ecommerce website that showcases products from a Supabase database. The application features user authentication, product browsing, cart management, order tracking, and WhatsApp integration for order completion.
+
+## Tech Stack
+- **Frontend**: React 19.1.0 with Vite
+- **Styling**: Tailwind CSS 4.1.11 (White theme only)
+- **UI Components**: Shadcn/ui components
+- **Database**: Supabase (PostgreSQL)
+- **State Management**: Zustand
+- **Routing**: React Router DOM 7.7.0
+- **Forms**: React Hook Form with Zod validation
+- **Icons**: Lucide React + React Icons
+- **Notifications**: Sonner
+
+## Supabase Project Details
+- **Project URL**: https://owxvofhvznnblayafocw.supabase.co
+- **Project ID**: owxvofhvznnblayafocw
+- **Database**: PostgreSQL with Row Level Security (RLS)
+- **Authentication**: Supabase Auth with custom user profiles
+- **Storage**: Supabase Storage for product images and user avatars
+
+## Database Schema (Supabase)
+
+### Tables Structure:
+
+#### 1. **products** (RLS: Disabled)
+- `id` (uuid, primary key, default: gen_random_uuid())
+- `collection_id` (uuid, foreign key to collections.id)
+- `images` (text[], array of image URLs)
+- `name` (text, NOT NULL)
+- `price` (numeric, NOT NULL)
+- `discount` (numeric, default: 0)
+- `hide` (boolean, default: false)
+- `created_at` (timestamptz, default: timezone('utc'::text, now()))
+- `overview` (jsonb, comment: "Product overview and specifications")
+- `care_and_instructions` (jsonb, comment: "Care and maintenance instructions")
+- `delivery_installation` (jsonb, comment: "Delivery and installation information")
+- `terms_and_conditions` (jsonb, comment: "Terms and conditions for the product")
+- `faq` (jsonb, comment: "Frequently asked questions about the product")
+- `disclaimer` (jsonb, comment: "Product disclaimers and legal information")
+- `product_overview` (jsonb, default: '{"blocks": []}', comment: "Product overview information")
+
+#### 2. **users** (RLS: Enabled)
+- `id` (integer, primary key, auto-increment)
+- `name` (varchar, NOT NULL)
+- `email` (varchar, NOT NULL, UNIQUE)
+- `mobile` (varchar, NOT NULL)
+- `avatar_url` (text, nullable)
+- `created_at` (timestamptz, default: now())
+- `updated_at` (timestamptz, default: now())
+
+#### 3. **collections** (RLS: Enabled)
+- `id` (uuid, primary key, default: gen_random_uuid())
+- `image_url` (text, NOT NULL)
+- `name` (text, NOT NULL)
+- `description` (text, nullable)
+- `no_products` (integer, default: 0)
+- `hide` (boolean, default: false)
+- `created_at` (timestamptz, default: timezone('utc'::text, now()))
+
+#### 4. **cart** (RLS: Disabled)
+- `id` (uuid, primary key, default: gen_random_uuid())
+- `user_id` (integer, foreign key to users.id, NOT NULL)
+- `product_id` (uuid, foreign key to products.id, NOT NULL)
+- `quantity` (integer, NOT NULL, default: 1, check: quantity > 0)
+- `created_at` (timestamptz, default: now())
+- `updated_at` (timestamptz, default: now())
+
+#### 5. **orders** (RLS: Disabled)
+- `id` (uuid, primary key, default: gen_random_uuid())
+- `user_id` (integer, foreign key to users.id, NOT NULL)
+- `product_id` (uuid, foreign key to products.id, NOT NULL)
+- `quantity` (integer, NOT NULL, default: 1, check: quantity > 0)
+- `requirements` (text, nullable)
+- `order_status` (varchar, NOT NULL, default: 'pending', check: status in ['pending', 'confirmed', 'processing', 'completed', 'cancelled'])
+- `is_completed` (boolean, default: false)
+- `whatsapp_sent` (boolean, default: false)
+- `whatsapp_sent_at` (timestamptz, nullable)
+- `notes` (text, nullable)
+- `created_at` (timestamptz, default: now())
+- `updated_at` (timestamptz, default: now())
+
+#### 6. **reviews** (RLS: Disabled)
+- `id` (uuid, primary key, default: gen_random_uuid())
+- `user_id` (integer, foreign key to users.id, NOT NULL)
+- `product_id` (uuid, foreign key to products.id, NOT NULL)
+- `rating` (integer, NOT NULL, check: rating >= 1 AND rating <= 5)
+- `comment` (text, nullable)
+- `image_url` (text, nullable)
+- `verified` (boolean, default: false)
+- `created_at` (timestamptz, default: now())
+- `updated_at` (timestamptz, default: now())
+
+#### 7. **login_logs** (RLS: Disabled)
+- `id` (uuid, primary key, default: gen_random_uuid())
+- `username` (varchar, NOT NULL)
+- `login_time` (timestamptz, default: now())
+- `logout_time` (timestamptz, nullable)
+- `location` (varchar, nullable)
+- `ip_address` (inet, nullable)
+- `user_agent` (text, nullable)
+- `session_duration` (interval, nullable)
+- `is_suspicious` (boolean, default: false)
+- `suspicious_reason` (text, nullable)
+- `created_at` (timestamptz, default: now())
+
+### Database Relationships:
+- **products** → **collections** (collection_id)
+- **cart** → **users** (user_id)
+- **cart** → **products** (product_id)
+- **orders** → **users** (user_id)
+- **orders** → **products** (product_id)
+- **reviews** → **users** (user_id)
+- **reviews** → **products** (product_id)
+
+## State Management (Zustand)
+
+### Stores:
+1. **useAuthStore**: User authentication state with Supabase Auth
+2. **useCartStore**: Shopping cart management with persistence
+3. **useProductStore**: Product data and filtering
+4. **useOrderStore**: Order management and status tracking
+5. **useReviewStore**: Review system with verification
+6. **useCollectionStore**: Product collections management
+
+## UI/UX Guidelines
+
+### Design Principles:
+- **White Theme Only**: Clean, minimal design
+- **Modern Aesthetics**: Contemporary ecommerce design
+- **Mobile-First**: Responsive design for all devices
+- **Accessibility**: WCAG compliant components
+- **Performance**: Optimized loading and interactions
+
+### Color Palette:
+- Primary: White (#FFFFFF)
+- Secondary: Light Gray (#F8F9FA)
+- Accent: Blue (#3B82F6)
+- Text: Dark Gray (#1F2937)
+- Border: Light Gray (#E5E7EB)
+
+### Typography:
+- Headings: Inter font family
+- Body: System font stack
+- Consistent spacing and sizing
+
+## Environment Variables
+```
+VITE_SUPABASE_URL=https://owxvofhvznnblayafocw.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93eHZvZmh2em5uYmxheWFmb2N3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxNzQyOTksImV4cCI6MjA2ODc1MDI5OX0.Fejcjupp9hHddXTg296M0H7Hvsx2wNrVER5LvkwTUO0
+VITE_WHATSAPP_NUMBER=your_whatsapp_number
+VITE_WHATSAPP_MESSAGE_TEMPLATE=your_message_template
+```
+
+## File Structure
+```
+src/
+├── components/
+│   ├── ui/           # Shadcn/ui components
+│   ├── layout/       # Layout components
+│   └── common/       # Shared components
+├── pages/
+│   ├── Home/
+│   ├── Products/
+│   ├── ProductDetail/
+│   ├── Cart/
+│   ├── Login/
+│   ├── Register/
+│   ├── Profile/
+│   ├── MyOrders/
+│   └── Checkout/
+├── stores/
+│   ├── useAuthStore.js
+│   ├── useCartStore.js
+│   ├── useProductStore.js
+│   ├── useOrderStore.js
+│   ├── useReviewStore.js
+│   └── useCollectionStore.js
+├── lib/
+│   ├── utils.js
+│   ├── supabase.js
+│   └── whatsapp.js
+├── hooks/
+│   ├── useProducts.js
+│   ├── useCart.js
+│   ├── useAuth.js
+│   └── useOrders.js
+└── styles/
+    └── globals.css
+```
+
+## Database Statistics
+- **Total Tables**: 7 (products, users, collections, cart, orders, reviews, login_logs)
+- **RLS Enabled**: users, collections
+- **Foreign Key Relationships**: 6 relationships established
+- **Data Types**: UUID, Integer, Text, Numeric, Boolean, Timestamp, JSONB, Arrays
+- **Constraints**: Check constraints for quantity > 0, rating 1-5, order status validation
+
+This core context provides the fundamental project information, database schema, and technical architecture for the ecommerce website.

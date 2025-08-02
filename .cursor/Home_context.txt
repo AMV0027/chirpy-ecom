@@ -1,0 +1,222 @@
+# Home Page Context
+
+## Page Overview
+The Home page serves as the main landing page for the ecommerce website, showcasing featured products, categories, and providing a welcoming introduction to the CHIRPY brand.
+
+## Page Features
+
+### 1. Hero Section
+- **Purpose**: Welcome visitors and provide clear call-to-action
+- **Content**: 
+  - Brand name "CHIRPY" with logo
+  - Compelling headline and description
+  - Two CTA buttons: "Shop Now" and "Track Orders"
+  - Background gradient (blue-50 to indigo-50)
+
+### 2. Categories Section
+- **Purpose**: Help users quickly find products by category
+- **Layout**: 6 category cards in a responsive grid (2 cols mobile, 3 cols tablet, 6 cols desktop)
+- **Categories**: Electronics, Clothing, Home & Garden, Sports, Books, Toys
+- **Each Category Card**:
+  - Emoji icon in colored background
+  - Category name
+  - Hover effects with shadow
+  - Links to filtered products page
+
+### 3. Featured Products Section
+- **Purpose**: Showcase handpicked products to encourage purchases
+- **Layout**: 4-column grid (1 col mobile, 2 cols tablet, 4 cols desktop)
+- **Product Cards Include**:
+  - Product image with hover zoom effect
+  - Product name with truncation
+  - Category badge
+  - Star rating (1-5 stars)
+  - Review count
+  - Price display
+  - "Add to Cart" button
+
+### 4. Features Section
+- **Purpose**: Build trust and explain value proposition
+- **Layout**: 3-column grid with icons and descriptions
+- **Features**:
+  - Fast Delivery (🚚)
+  - Secure Shopping (🛡️)
+  - Quality Products (⭐)
+
+## Data Requirements
+
+### Products Data
+```javascript
+// Product structure from Supabase
+{
+  id: "uuid",
+  name: "string",
+  price: "numeric",
+  images: ["string[]"],
+  category: "string",
+  rating: "numeric",
+  review_count: "integer",
+  discount: "numeric",
+  hide: "boolean"
+}
+```
+
+### Categories Data
+```javascript
+// Hardcoded categories for now
+const categories = [
+  { name: 'Electronics', icon: '📱', color: 'bg-blue-100' },
+  { name: 'Clothing', icon: '👕', color: 'bg-green-100' },
+  { name: 'Home & Garden', icon: '🏠', color: 'bg-yellow-100' },
+  { name: 'Sports', icon: '⚽', color: 'bg-red-100' },
+  { name: 'Books', icon: '📚', color: 'bg-purple-100' },
+  { name: 'Toys', icon: '🎮', color: 'bg-pink-100' }
+]
+```
+
+## State Management
+
+### Required Stores
+- **useProductStore**: Fetch and manage products data
+- **useCartStore**: Handle "Add to Cart" functionality
+
+### Key Functions
+```javascript
+// From useProductStore
+const { 
+  products, 
+  isLoading, 
+  fetchProducts, 
+  getFeaturedProducts 
+} = useProductStore()
+
+// From useCartStore
+const { addToCart } = useCartStore()
+```
+
+## Component Structure
+
+### Main Components
+1. **HeroSection**: Welcome message and CTAs
+2. **CategoriesGrid**: Category cards with navigation
+3. **FeaturedProducts**: Product showcase grid
+4. **FeaturesSection**: Trust-building features
+
+### Sub-Components
+- **ProductCard**: Individual product display
+- **CategoryCard**: Individual category display
+- **FeatureCard**: Individual feature display
+
+## API Integration
+
+### Supabase Queries
+```javascript
+// Fetch all products for featured section
+const { data, error } = await supabase
+  .from('products')
+  .select('*')
+  .eq('hide', false)
+  .order('created_at', { ascending: false })
+  .limit(8)
+```
+
+## UI/UX Guidelines
+
+### Responsive Design
+- **Mobile**: Single column layouts, stacked CTAs
+- **Tablet**: 2-column grids, side-by-side CTAs
+- **Desktop**: 4-6 column grids, horizontal CTAs
+
+### Loading States
+- Skeleton loaders for product cards
+- Spinner for initial data fetch
+- Progressive loading for images
+
+### Interactions
+- Hover effects on cards and buttons
+- Smooth transitions and animations
+- Toast notifications for cart actions
+
+## Performance Considerations
+
+### Image Optimization
+- Lazy loading for product images
+- Responsive image sizes
+- WebP format support
+- Placeholder images while loading
+
+### Data Fetching
+- Fetch products on component mount
+- Cache featured products
+- Error handling for failed requests
+
+## Accessibility Features
+
+### ARIA Labels
+- Product cards with descriptive labels
+- Category cards with navigation context
+- Button labels for screen readers
+
+### Keyboard Navigation
+- Tab order through all interactive elements
+- Enter key support for card navigation
+- Focus indicators for all clickable elements
+
+## Error Handling
+
+### Network Errors
+- Retry mechanism for failed API calls
+- Fallback content for missing data
+- User-friendly error messages
+
+### Data Validation
+- Check for required product fields
+- Handle missing images gracefully
+- Validate price and rating data
+
+## SEO Considerations
+
+### Meta Tags
+- Page title: "CHIRPY - Your Trusted Source for Quality Products"
+- Meta description with key features
+- Open Graph tags for social sharing
+
+### Structured Data
+- Product schema markup for featured items
+- Organization schema for company info
+- Breadcrumb navigation schema
+
+## Testing Scenarios
+
+### User Flows
+1. **Browse Categories**: Click category → navigate to filtered products
+2. **Add to Cart**: Click "Add to Cart" → see toast notification
+3. **Shop Now**: Click CTA → navigate to products page
+4. **Track Orders**: Click CTA → navigate to orders page
+
+### Edge Cases
+- No products available
+- Network connectivity issues
+- Invalid product data
+- Empty categories
+
+## Implementation Notes
+
+### File Location
+```
+src/pages/Home/Home.jsx
+```
+
+### Dependencies
+- React Router for navigation
+- Lucide React for icons
+- Sonner for toast notifications
+- Zustand stores for state management
+
+### Key Functions to Implement
+- `handleAddToCart(product)`: Add product to cart with feedback
+- `handleCategoryClick(category)`: Navigate to filtered products
+- `handleShopNow()`: Navigate to products page
+- `handleTrackOrders()`: Navigate to orders page
+
+This context provides comprehensive guidance for implementing the Home page with all necessary features, data requirements, and user experience considerations. 

@@ -1,0 +1,345 @@
+# Login Page Context
+
+## Page Overview
+The Login page provides user authentication functionality using Supabase Auth. Users can sign in with email/password and access their account features like order history and profile management.
+
+## Page Features
+
+### 1. Login Form
+- **Email Input**: Required field with email validation
+- **Password Input**: Required field with show/hide toggle
+- **Remember Me**: Checkbox for session persistence
+- **Login Button**: Primary CTA with loading state
+- **Form Validation**: Real-time validation with error messages
+
+### 2. Social Login (Future)
+- **Google OAuth**: Sign in with Google account
+- **Facebook OAuth**: Sign in with Facebook account
+- **Apple OAuth**: Sign in with Apple ID
+
+### 3. Additional Links
+- **Forgot Password**: Link to password reset page
+- **Create Account**: Link to registration page
+- **Back to Home**: Return to homepage
+
+### 4. Success/Error States
+- **Success**: Redirect to intended page or dashboard
+- **Error**: Display specific error messages
+- **Loading**: Show spinner during authentication
+
+## Data Requirements
+
+### Login Form Data
+```javascript
+{
+  email: "string",
+  password: "string",
+  rememberMe: "boolean"
+}
+```
+
+### User Data Structure (After Login)
+```javascript
+{
+  id: "integer",
+  name: "string",
+  email: "string",
+  mobile: "string",
+  avatar_url: "string",
+  created_at: "timestamp"
+}
+```
+
+## State Management
+
+### Required Stores
+- **useAuthStore**: Authentication state and operations
+- **useCartStore**: Cart data for authenticated users
+
+### Key Functions
+```javascript
+// From useAuthStore
+const {
+  signIn,
+  signOut,
+  user,
+  isLoading,
+  error,
+  isAuthenticated
+} = useAuthStore()
+```
+
+## Component Structure
+
+### Main Components
+1. **LoginForm**: Main authentication form
+2. **SocialLogin**: OAuth login buttons (future)
+3. **FormValidation**: Real-time validation
+4. **ErrorDisplay**: Error message component
+5. **LoadingSpinner**: Authentication loading state
+
+### Sub-Components
+- **EmailInput**: Email field with validation
+- **PasswordInput**: Password field with toggle
+- **RememberMeCheckbox**: Session persistence option
+- **LoginButton**: Submit button with states
+
+## Authentication Flow
+
+### Login Process
+```javascript
+const handleLogin = async (formData) => {
+  try {
+    setIsLoading(true)
+    setError(null)
+    
+    const { data, error } = await signIn(formData.email, formData.password)
+    
+    if (error) {
+      setError(error.message)
+      return
+    }
+    
+    // Success - redirect to intended page
+    const redirectTo = searchParams.get('redirect') || '/profile'
+    navigate(redirectTo)
+    toast.success('Successfully logged in!')
+    
+  } catch (error) {
+    setError('An unexpected error occurred')
+  } finally {
+    setIsLoading(false)
+  }
+}
+```
+
+### Form Validation
+```javascript
+const validateForm = (data) => {
+  const errors = {}
+  
+  // Email validation
+  if (!data.email) {
+    errors.email = 'Email is required'
+  } else if (!isValidEmail(data.email)) {
+    errors.email = 'Please enter a valid email'
+  }
+  
+  // Password validation
+  if (!data.password) {
+    errors.password = 'Password is required'
+  } else if (data.password.length < 6) {
+    errors.password = 'Password must be at least 6 characters'
+  }
+  
+  return errors
+}
+```
+
+## UI/UX Guidelines
+
+### Form Design
+- **Clean Layout**: Minimalist design with clear hierarchy
+- **Input Styling**: Consistent with brand colors
+- **Error States**: Red borders and error messages
+- **Success States**: Green validation indicators
+
+### Responsive Design
+- **Mobile**: Full-width form, stacked elements
+- **Tablet**: Centered form with proper spacing
+- **Desktop**: Centered form with max-width
+
+### Loading States
+- **Button Loading**: Spinner in login button
+- **Form Disabled**: Disable inputs during submission
+- **Progress Indicator**: Show authentication progress
+
+## Form Validation
+
+### Real-time Validation
+- Validate email format as user types
+- Check password strength
+- Show validation errors immediately
+- Clear errors when user starts typing
+
+### Error Messages
+```javascript
+const errorMessages = {
+  'Invalid login credentials': 'Invalid email or password',
+  'Email not confirmed': 'Please check your email and confirm your account',
+  'Too many requests': 'Too many login attempts. Please try again later',
+  'Network error': 'Connection error. Please check your internet connection'
+}
+```
+
+## Security Features
+
+### Password Security
+- Minimum 6 characters required
+- Show/hide password toggle
+- No password confirmation on login
+- Secure password transmission
+
+### Session Management
+- JWT token storage
+- Automatic token refresh
+- Session timeout handling
+- Remember me functionality
+
+### Rate Limiting
+- Prevent brute force attacks
+- Show cooldown messages
+- Progressive delays for failed attempts
+
+## Error Handling
+
+### Authentication Errors
+- Invalid credentials
+- Account not found
+- Email not verified
+- Account locked
+- Network connectivity issues
+
+### Form Errors
+- Required field validation
+- Email format validation
+- Password length validation
+- Server validation errors
+
+### User Feedback
+- Clear error messages
+- Success notifications
+- Loading indicators
+- Redirect confirmations
+
+## Accessibility Features
+
+### Keyboard Navigation
+- Tab order through all form elements
+- Enter key to submit form
+- Escape key to clear form
+- Focus management for errors
+
+### Screen Reader Support
+- Proper form labels
+- Error announcements
+- Loading state announcements
+- Success confirmations
+
+### ARIA Labels
+- Form field descriptions
+- Error message associations
+- Button state indicators
+- Loading state announcements
+
+## Redirect Logic
+
+### After Successful Login
+```javascript
+const handleSuccessfulLogin = () => {
+  // Check for redirect parameter
+  const redirectTo = searchParams.get('redirect')
+  
+  if (redirectTo) {
+    navigate(redirectTo)
+  } else {
+    // Default redirects based on user state
+    if (hasCartItems) {
+      navigate('/cart')
+    } else {
+      navigate('/profile')
+    }
+  }
+}
+```
+
+### Protected Route Handling
+- Redirect to login if accessing protected page
+- Return to intended page after login
+- Handle deep linking properly
+
+## Integration with Cart
+
+### Cart Sync
+```javascript
+const syncCartWithUser = async (user) => {
+  // Sync local cart with user account
+  const localCart = getLocalCart()
+  
+  if (localCart.length > 0) {
+    await syncCartToDatabase(user.id, localCart)
+    clearLocalCart()
+  }
+}
+```
+
+### User Preferences
+- Load user preferences
+- Apply saved settings
+- Sync user data across devices
+
+## Performance Considerations
+
+### Form Optimization
+- Debounced email validation
+- Efficient re-renders
+- Minimal API calls
+- Optimistic UI updates
+
+### Loading States
+- Quick initial load
+- Progressive form validation
+- Efficient error handling
+- Smooth transitions
+
+## Testing Scenarios
+
+### Login Flows
+1. **Valid Login**: Enter credentials → success → redirect
+2. **Invalid Credentials**: Enter wrong password → error message
+3. **Empty Fields**: Submit empty form → validation errors
+4. **Network Error**: No connection → error message
+
+### Edge Cases
+- Account not verified
+- Account locked
+- Rate limiting
+- Session expiration
+- Browser compatibility
+
+### User Flows
+1. **Guest User**: Visit protected page → redirect to login
+2. **Returning User**: Login → redirect to intended page
+3. **New User**: Login → redirect to profile setup
+
+## Implementation Notes
+
+### File Location
+```
+src/pages/Login/Login.jsx
+```
+
+### Dependencies
+- React Hook Form for form management
+- Zod for validation schemas
+- React Router for navigation
+- Sonner for notifications
+- Zustand stores for state management
+
+### Key Functions to Implement
+- `handleSubmit(formData)`: Process login form
+- `validateEmail(email)`: Email format validation
+- `handleSocialLogin(provider)`: OAuth login (future)
+- `handleForgotPassword()`: Navigate to password reset
+- `handleCreateAccount()`: Navigate to registration
+
+### Form Schema (Zod)
+```javascript
+const loginSchema = z.object({
+  email: z.string().email('Please enter a valid email'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  rememberMe: z.boolean().optional()
+})
+```
+
+This context provides comprehensive guidance for implementing the Login page with secure authentication and excellent user experience. 

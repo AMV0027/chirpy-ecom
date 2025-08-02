@@ -1,0 +1,410 @@
+# Register Page Context
+
+## Page Overview
+The Register page allows new users to create an account with email/password authentication. Users can sign up to access personalized features like order history, profile management, and saved preferences.
+
+## Page Features
+
+### 1. Registration Form
+- **Name Input**: Full name field with validation
+- **Email Input**: Email field with format validation
+- **Mobile Input**: Phone number with format validation
+- **Password Input**: Password field with strength indicator
+- **Confirm Password**: Password confirmation field
+- **Terms Checkbox**: Accept terms and conditions
+- **Register Button**: Primary CTA with loading state
+
+### 2. Form Validation
+- **Real-time Validation**: Validate fields as user types
+- **Password Strength**: Visual indicator of password strength
+- **Email Format**: Check for valid email format
+- **Mobile Format**: Validate phone number format
+- **Password Match**: Ensure passwords match
+
+### 3. Success/Error States
+- **Success**: Redirect to login or profile setup
+- **Error**: Display specific error messages
+- **Loading**: Show spinner during registration
+- **Email Verification**: Handle email confirmation
+
+### 4. Additional Links
+- **Login Link**: Navigate to login page
+- **Terms of Service**: Link to terms page
+- **Privacy Policy**: Link to privacy page
+
+## Data Requirements
+
+### Registration Form Data
+```javascript
+{
+  name: "string",
+  email: "string",
+  mobile: "string",
+  password: "string",
+  confirmPassword: "string",
+  acceptTerms: "boolean"
+}
+```
+
+### User Data Structure (After Registration)
+```javascript
+{
+  id: "integer",
+  name: "string",
+  email: "string",
+  mobile: "string",
+  avatar_url: "string",
+  created_at: "timestamp"
+}
+```
+
+## State Management
+
+### Required Stores
+- **useAuthStore**: Registration and authentication operations
+- **useCartStore**: Cart data for new users
+
+### Key Functions
+```javascript
+// From useAuthStore
+const {
+  signUp,
+  signIn,
+  user,
+  isLoading,
+  error,
+  isAuthenticated
+} = useAuthStore()
+```
+
+## Component Structure
+
+### Main Components
+1. **RegisterForm**: Main registration form
+2. **FormValidation**: Real-time validation
+3. **PasswordStrength**: Password strength indicator
+4. **ErrorDisplay**: Error message component
+5. **LoadingSpinner**: Registration loading state
+
+### Sub-Components
+- **NameInput**: Name field with validation
+- **EmailInput**: Email field with format check
+- **MobileInput**: Phone number field
+- **PasswordInput**: Password field with strength
+- **ConfirmPasswordInput**: Password confirmation
+- **TermsCheckbox**: Terms acceptance checkbox
+
+## Registration Flow
+
+### Registration Process
+```javascript
+const handleRegistration = async (formData) => {
+  try {
+    setIsLoading(true)
+    setError(null)
+    
+    // Validate form data
+    const validationErrors = validateRegistrationForm(formData)
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors)
+      return
+    }
+    
+    // Create user account
+    const { data, error } = await signUp({
+      email: formData.email,
+      password: formData.password,
+      options: {
+        data: {
+          name: formData.name,
+          mobile: formData.mobile
+        }
+      }
+    })
+    
+    if (error) {
+      setError(error.message)
+      return
+    }
+    
+    // Success - redirect to login or profile setup
+    toast.success('Account created successfully! Please check your email to verify your account.')
+    navigate('/login')
+    
+  } catch (error) {
+    setError('An unexpected error occurred')
+  } finally {
+    setIsLoading(false)
+  }
+}
+```
+
+### Form Validation
+```javascript
+const validateRegistrationForm = (data) => {
+  const errors = {}
+  
+  // Name validation
+  if (!data.name) {
+    errors.name = 'Name is required'
+  } else if (data.name.length < 2) {
+    errors.name = 'Name must be at least 2 characters'
+  }
+  
+  // Email validation
+  if (!data.email) {
+    errors.email = 'Email is required'
+  } else if (!isValidEmail(data.email)) {
+    errors.email = 'Please enter a valid email'
+  }
+  
+  // Mobile validation
+  if (!data.mobile) {
+    errors.mobile = 'Mobile number is required'
+  } else if (!isValidMobile(data.mobile)) {
+    errors.mobile = 'Please enter a valid mobile number'
+  }
+  
+  // Password validation
+  if (!data.password) {
+    errors.password = 'Password is required'
+  } else if (data.password.length < 6) {
+    errors.password = 'Password must be at least 6 characters'
+  } else if (!isStrongPassword(data.password)) {
+    errors.password = 'Password must contain letters and numbers'
+  }
+  
+  // Confirm password validation
+  if (!data.confirmPassword) {
+    errors.confirmPassword = 'Please confirm your password'
+  } else if (data.password !== data.confirmPassword) {
+    errors.confirmPassword = 'Passwords do not match'
+  }
+  
+  // Terms validation
+  if (!data.acceptTerms) {
+    errors.acceptTerms = 'You must accept the terms and conditions'
+  }
+  
+  return errors
+}
+```
+
+## UI/UX Guidelines
+
+### Form Design
+- **Clean Layout**: Minimalist design with clear hierarchy
+- **Input Styling**: Consistent with brand colors
+- **Error States**: Red borders and error messages
+- **Success States**: Green validation indicators
+
+### Responsive Design
+- **Mobile**: Full-width form, stacked elements
+- **Tablet**: Centered form with proper spacing
+- **Desktop**: Centered form with max-width
+
+### Loading States
+- **Button Loading**: Spinner in register button
+- **Form Disabled**: Disable inputs during submission
+- **Progress Indicator**: Show registration progress
+
+## Password Strength Indicator
+
+### Strength Levels
+```javascript
+const getPasswordStrength = (password) => {
+  let score = 0
+  
+  if (password.length >= 8) score++
+  if (/[a-z]/.test(password)) score++
+  if (/[A-Z]/.test(password)) score++
+  if (/[0-9]/.test(password)) score++
+  if (/[^A-Za-z0-9]/.test(password)) score++
+  
+  if (score < 2) return { level: 'weak', color: 'red' }
+  if (score < 4) return { level: 'medium', color: 'yellow' }
+  return { level: 'strong', color: 'green' }
+}
+```
+
+### Visual Indicator
+- **Weak**: Red progress bar
+- **Medium**: Yellow progress bar
+- **Strong**: Green progress bar
+- **Text Label**: "Weak", "Medium", "Strong"
+
+## Form Validation
+
+### Real-time Validation
+- Validate fields as user types
+- Show validation errors immediately
+- Clear errors when user starts typing
+- Password strength indicator
+
+### Error Messages
+```javascript
+const errorMessages = {
+  'User already registered': 'An account with this email already exists',
+  'Invalid email': 'Please enter a valid email address',
+  'Weak password': 'Password must be at least 6 characters with letters and numbers',
+  'Network error': 'Connection error. Please check your internet connection'
+}
+```
+
+## Security Features
+
+### Password Security
+- Minimum 6 characters required
+- Must contain letters and numbers
+- Password strength indicator
+- Secure password transmission
+
+### Email Verification
+- Send verification email
+- Require email confirmation
+- Handle verification flow
+- Resend verification option
+
+### Data Validation
+- Sanitize user inputs
+- Validate email format
+- Check phone number format
+- Prevent duplicate registrations
+
+## Error Handling
+
+### Registration Errors
+- Email already exists
+- Invalid email format
+- Weak password
+- Network connectivity issues
+- Server validation errors
+
+### Form Errors
+- Required field validation
+- Email format validation
+- Password strength validation
+- Terms acceptance validation
+
+### User Feedback
+- Clear error messages
+- Success notifications
+- Loading indicators
+- Redirect confirmations
+
+## Accessibility Features
+
+### Keyboard Navigation
+- Tab order through all form elements
+- Enter key to submit form
+- Escape key to clear form
+- Focus management for errors
+
+### Screen Reader Support
+- Proper form labels
+- Error announcements
+- Loading state announcements
+- Success confirmations
+
+### ARIA Labels
+- Form field descriptions
+- Error message associations
+- Button state indicators
+- Loading state announcements
+
+## Integration with Cart
+
+### Cart Sync
+```javascript
+const handleSuccessfulRegistration = async (user) => {
+  // Sync local cart with new user account
+  const localCart = getLocalCart()
+  
+  if (localCart.length > 0) {
+    await syncCartToDatabase(user.id, localCart)
+    clearLocalCart()
+  }
+  
+  // Redirect to intended page
+  const redirectTo = searchParams.get('redirect') || '/profile'
+  navigate(redirectTo)
+}
+```
+
+### User Preferences
+- Initialize user preferences
+- Set default settings
+- Create user profile
+- Sync across devices
+
+## Performance Considerations
+
+### Form Optimization
+- Debounced validation
+- Efficient re-renders
+- Minimal API calls
+- Optimistic UI updates
+
+### Loading States
+- Quick initial load
+- Progressive form validation
+- Efficient error handling
+- Smooth transitions
+
+## Testing Scenarios
+
+### Registration Flows
+1. **Valid Registration**: Fill form → success → redirect
+2. **Invalid Data**: Submit invalid form → validation errors
+3. **Duplicate Email**: Try existing email → error message
+4. **Network Error**: No connection → error message
+
+### Edge Cases
+- Email already exists
+- Weak password
+- Invalid email format
+- Terms not accepted
+- Network timeouts
+
+### User Flows
+1. **New User**: Register → email verification → login
+2. **Existing User**: Try to register → redirect to login
+3. **Guest User**: Register → access protected features
+
+## Implementation Notes
+
+### File Location
+```
+src/pages/Register/Register.jsx
+```
+
+### Dependencies
+- React Hook Form for form management
+- Zod for validation schemas
+- React Router for navigation
+- Sonner for notifications
+- Zustand stores for state management
+
+### Key Functions to Implement
+- `handleSubmit(formData)`: Process registration form
+- `validateEmail(email)`: Email format validation
+- `validateMobile(mobile)`: Phone number validation
+- `getPasswordStrength(password)`: Password strength check
+- `handleLoginRedirect()`: Navigate to login page
+
+### Form Schema (Zod)
+```javascript
+const registerSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  email: z.string().email('Please enter a valid email'),
+  mobile: z.string().min(10, 'Please enter a valid mobile number'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  confirmPassword: z.string(),
+  acceptTerms: z.boolean().refine(val => val === true, 'You must accept the terms')
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"]
+})
+```
+
+This context provides comprehensive guidance for implementing the Register page with secure user registration and excellent user experience. 

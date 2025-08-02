@@ -1,0 +1,406 @@
+# ProductDetail Page Context
+
+## Page Overview
+The ProductDetail page displays comprehensive information about a specific product, including images, specifications, reviews, and purchase options. Users can view detailed product information, read reviews, and add products to their cart.
+
+## Page Features
+
+### 1. Product Images
+- **Main Image**: Large primary product image
+- **Image Gallery**: Thumbnail navigation for multiple images
+- **Image Zoom**: Hover zoom functionality for detailed view
+- **Image Navigation**: Previous/next buttons for gallery
+
+### 2. Product Information
+- **Product Name**: Clear, prominent product title
+- **Price Display**: Current price with discount if applicable
+- **Description**: Detailed product description
+- **Specifications**: Technical details and features
+- **Stock Status**: Availability indicator
+
+### 3. Purchase Options
+- **Quantity Selector**: Plus/minus buttons with input field
+- **Add to Cart**: Primary CTA button
+- **Stock Validation**: Prevent adding more than available
+- **Wishlist**: Save for later functionality (future)
+
+### 4. Product Details Tabs
+- **Overview**: Product description and key features
+- **Specifications**: Technical details and dimensions
+- **Care Instructions**: Maintenance and care guidelines
+- **Delivery Info**: Shipping and installation details
+- **FAQ**: Frequently asked questions
+
+### 5. Reviews Section
+- **Review Summary**: Average rating and total reviews
+- **Star Rating**: Visual 1-5 star display
+- **Review List**: Individual review cards
+- **Review Filter**: Sort by rating or date
+- **Review Pagination**: Load more reviews
+
+## Data Requirements
+
+### Product Data Structure
+```javascript
+{
+  id: "uuid",
+  name: "string",
+  price: "numeric",
+  discount: "numeric",
+  images: ["string[]"],
+  category: "string",
+  overview: "jsonb",
+  care_and_instructions: "jsonb",
+  delivery_installation: "jsonb",
+  terms_and_conditions: "jsonb",
+  faq: "jsonb",
+  disclaimer: "jsonb",
+  product_overview: "jsonb",
+  hide: "boolean",
+  created_at: "timestamp"
+}
+```
+
+### Review Data Structure
+```javascript
+{
+  id: "uuid",
+  user_id: "integer",
+  product_id: "uuid",
+  rating: "integer",
+  comment: "string",
+  image_url: "string",
+  verified: "boolean",
+  created_at: "timestamp",
+  user: {
+    name: "string",
+    avatar_url: "string"
+  }
+}
+```
+
+## State Management
+
+### Required Stores
+- **useProductStore**: Product data and operations
+- **useCartStore**: Add to cart functionality
+- **useReviewStore**: Reviews data and operations
+- **useAuthStore**: User authentication for reviews
+
+### Key Functions
+```javascript
+// From useProductStore
+const {
+  product,
+  isLoading,
+  fetchProduct,
+  getRelatedProducts
+} = useProductStore()
+
+// From useCartStore
+const { addToCart, isInCart, getItemQuantity } = useCartStore()
+
+// From useReviewStore
+const {
+  reviews,
+  averageRating,
+  fetchReviews,
+  createReview
+} = useReviewStore()
+```
+
+## Component Structure
+
+### Main Components
+1. **ProductGallery**: Image gallery with navigation
+2. **ProductInfo**: Product details and pricing
+3. **PurchaseOptions**: Quantity and add to cart
+4. **ProductTabs**: Detailed information tabs
+5. **ReviewsSection**: Product reviews and ratings
+6. **RelatedProducts**: Similar products carousel
+
+### Sub-Components
+- **ImageGallery**: Main image with thumbnails
+- **PriceDisplay**: Price with discount calculation
+- **QuantitySelector**: Quantity input with controls
+- **ReviewCard**: Individual review display
+- **RatingStars**: Star rating component
+
+## Product Information Display
+
+### Price Calculation
+```javascript
+const calculatePrice = (product) => {
+  if (product.discount > 0) {
+    const discountedPrice = product.price - (product.price * product.discount / 100)
+    return {
+      original: product.price,
+      discounted: discountedPrice,
+      savings: product.price - discountedPrice
+    }
+  }
+  return {
+    original: product.price,
+    discounted: product.price,
+    savings: 0
+  }
+}
+```
+
+### Stock Status
+```javascript
+const getStockStatus = (product) => {
+  if (product.stock_quantity <= 0) {
+    return { status: 'out_of_stock', message: 'Out of Stock' }
+  } else if (product.stock_quantity <= 5) {
+    return { status: 'low_stock', message: `Only ${product.stock_quantity} left` }
+  } else {
+    return { status: 'in_stock', message: 'In Stock' }
+  }
+}
+```
+
+## Add to Cart Functionality
+
+### Cart Integration
+```javascript
+const handleAddToCart = (product, quantity) => {
+  // Validate stock
+  if (quantity > product.stock_quantity) {
+    toast.error('Cannot add more items than available stock')
+    return
+  }
+  
+  // Check if already in cart
+  const existingQuantity = getItemQuantity(product.id)
+  const totalQuantity = existingQuantity + quantity
+  
+  if (totalQuantity > product.stock_quantity) {
+    toast.error('Cannot add more items than available stock')
+    return
+  }
+  
+  // Add to cart
+  addToCart(product, quantity)
+  toast.success(`Added ${quantity} ${quantity === 1 ? 'item' : 'items'} to cart`)
+}
+```
+
+### Quantity Validation
+- Minimum quantity: 1
+- Maximum quantity: Available stock
+- Increment/decrement buttons
+- Direct input with validation
+
+## Reviews System
+
+### Review Display
+```javascript
+const ReviewCard = ({ review }) => {
+  return (
+    <div className="review-card">
+      <div className="review-header">
+        <img src={review.user.avatar_url} alt={review.user.name} />
+        <div>
+          <h4>{review.user.name}</h4>
+          <div className="rating">
+            {[...Array(5)].map((_, i) => (
+              <Star key={i} filled={i < review.rating} />
+            ))}
+          </div>
+          <span className="date">{formatDate(review.created_at)}</span>
+        </div>
+      </div>
+      <p className="comment">{review.comment}</p>
+      {review.image_url && (
+        <img src={review.image_url} alt="Review" className="review-image" />
+      )}
+      {review.verified && (
+        <span className="verified-badge">Verified Purchase</span>
+      )}
+    </div>
+  )
+}
+```
+
+### Review Statistics
+```javascript
+const calculateReviewStats = (reviews) => {
+  const total = reviews.length
+  const average = reviews.reduce((sum, review) => sum + review.rating, 0) / total
+  
+  const ratingCounts = reviews.reduce((counts, review) => {
+    counts[review.rating] = (counts[review.rating] || 0) + 1
+    return counts
+  }, {})
+  
+  return {
+    total,
+    average: Math.round(average * 10) / 10,
+    ratingCounts
+  }
+}
+```
+
+## UI/UX Guidelines
+
+### Responsive Design
+- **Mobile**: Single column, stacked sections
+- **Tablet**: Two-column layout with gallery and info
+- **Desktop**: Full layout with sidebar gallery
+
+### Image Gallery
+- **Main Image**: Large, prominent display
+- **Thumbnails**: Small preview images
+- **Navigation**: Arrow buttons for gallery
+- **Zoom**: Hover zoom for detailed view
+
+### Loading States
+- **Product Loading**: Skeleton for product info
+- **Image Loading**: Placeholder for images
+- **Review Loading**: Skeleton for reviews
+- **Cart Loading**: Spinner for add to cart
+
+## API Integration
+
+### Product Fetching
+```javascript
+const fetchProductDetails = async (productId) => {
+  const { data: product, error } = await supabase
+    .from('products')
+    .select('*')
+    .eq('id', productId)
+    .eq('hide', false)
+    .single()
+  
+  if (error) {
+    throw error
+  }
+  
+  return product
+}
+```
+
+### Reviews Fetching
+```javascript
+const fetchProductReviews = async (productId) => {
+  const { data: reviews, error } = await supabase
+    .from('reviews')
+    .select(`
+      *,
+      user:users(name, avatar_url)
+    `)
+    .eq('product_id', productId)
+    .order('created_at', { ascending: false })
+  
+  if (error) {
+    throw error
+  }
+  
+  return reviews
+}
+```
+
+## SEO Considerations
+
+### Meta Tags
+- **Title**: Product name with brand
+- **Description**: Product description
+- **Images**: Product images for social sharing
+- **Structured Data**: Product schema markup
+
+### URL Structure
+```
+/product/{product-id}/{product-slug}
+```
+
+### Breadcrumb Navigation
+```
+Home > Category > Product Name
+```
+
+## Performance Considerations
+
+### Image Optimization
+- **Lazy Loading**: Load images as needed
+- **Responsive Images**: Different sizes for devices
+- **WebP Format**: Modern image format
+- **Progressive Loading**: Blur to sharp transition
+
+### Data Fetching
+- **Parallel Requests**: Fetch product and reviews together
+- **Caching**: Cache product data
+- **Error Boundaries**: Handle failed requests gracefully
+
+## Accessibility Features
+
+### Image Gallery
+- **Alt Text**: Descriptive alt text for all images
+- **Keyboard Navigation**: Arrow keys for gallery
+- **Screen Reader**: Announce current image
+
+### Product Information
+- **Semantic HTML**: Proper heading structure
+- **ARIA Labels**: Descriptive labels for controls
+- **Focus Management**: Logical tab order
+
+## Error Handling
+
+### Product Not Found
+- **404 Page**: Redirect to 404 if product doesn't exist
+- **Fallback**: Show similar products
+- **User Feedback**: Clear error message
+
+### Network Errors
+- **Retry Mechanism**: Retry failed requests
+- **Offline State**: Show cached data if available
+- **Error Boundaries**: Graceful error handling
+
+## Testing Scenarios
+
+### Product Display
+1. **Valid Product**: Load product → display details
+2. **Invalid Product**: Invalid ID → 404 page
+3. **Network Error**: Connection issues → error state
+4. **Image Loading**: Slow images → loading states
+
+### Purchase Flow
+1. **Add to Cart**: Select quantity → add to cart
+2. **Stock Validation**: Try to add more than stock → error
+3. **Quantity Update**: Change quantity → update cart
+4. **Cart Integration**: Check cart after adding
+
+### Review System
+1. **Load Reviews**: Fetch reviews → display list
+2. **Review Filter**: Filter by rating → filtered results
+3. **Review Pagination**: Load more reviews → append list
+4. **Review Creation**: Submit review → add to list
+
+## Implementation Notes
+
+### File Location
+```
+src/pages/ProductDetail/ProductDetail.jsx
+```
+
+### Dependencies
+- React Router for navigation and URL params
+- React Hook Form for review forms
+- Sonner for notifications
+- Zustand stores for state management
+- Image gallery library (optional)
+
+### Key Functions to Implement
+- `handleAddToCart(product, quantity)`: Add product to cart
+- `handleQuantityChange(quantity)`: Update quantity
+- `handleImageChange(index)`: Change main image
+- `handleReviewSubmit(review)`: Submit new review
+- `handleReviewFilter(filter)`: Filter reviews
+
+### URL Parameters
+```javascript
+const { id } = useParams()
+const productId = id.split('-')[0] // Extract ID from slug
+```
+
+This context provides comprehensive guidance for implementing the ProductDetail page with full product information, reviews, and purchase functionality. 

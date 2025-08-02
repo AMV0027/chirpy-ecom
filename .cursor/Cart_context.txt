@@ -1,0 +1,339 @@
+# Cart Page Context
+
+## Page Overview
+The Cart page allows users to review their selected products, manage quantities, and proceed to checkout. It provides a comprehensive shopping cart experience with real-time updates and WhatsApp integration.
+
+## Page Features
+
+### 1. Cart Items List
+- **Product Display**: Image, name, price, and quantity for each item
+- **Quantity Controls**: Plus/minus buttons with quantity validation
+- **Remove Item**: Delete button for each cart item
+- **Stock Validation**: Prevent adding more than available stock
+- **Price Calculation**: Individual item prices and totals
+
+### 2. Order Summary
+- **Subtotal**: Sum of all item prices
+- **Shipping**: Free shipping indicator
+- **Total**: Final amount to be paid
+- **Item Count**: Total number of items in cart
+- **Tax Calculation**: If applicable
+
+### 3. Action Buttons
+- **Proceed to Checkout**: Primary CTA for authenticated users
+- **Clear Cart**: Remove all items from cart
+- **Continue Shopping**: Navigate back to products
+- **Login Prompt**: For unauthenticated users
+
+### 4. Empty Cart State
+- **Empty Message**: Friendly message when cart is empty
+- **Call to Action**: "Start Shopping" button
+- **Illustration**: Shopping cart icon or illustration
+
+## Data Requirements
+
+### Cart Item Structure
+```javascript
+{
+  id: "uuid",
+  name: "string",
+  price: "numeric",
+  image: "string",
+  quantity: "integer",
+  stock_quantity: "integer",
+  total: "numeric" // price * quantity
+}
+```
+
+### Cart Summary Structure
+```javascript
+{
+  items: "CartItem[]",
+  subtotal: "numeric",
+  shipping: "numeric",
+  tax: "numeric",
+  total: "numeric",
+  itemCount: "integer"
+}
+```
+
+## State Management
+
+### Required Stores
+- **useCartStore**: Main cart data and operations
+- **useAuthStore**: User authentication status
+
+### Key Functions
+```javascript
+// From useCartStore
+const {
+  cartItems,
+  removeFromCart,
+  updateQuantity,
+  getCartTotal,
+  clearCart,
+  getCartItemCount
+} = useCartStore()
+
+// From useAuthStore
+const { user, isAuthenticated } = useAuthStore()
+```
+
+## Component Structure
+
+### Main Components
+1. **CartHeader**: Page title and breadcrumb
+2. **CartItemsList**: List of cart items with controls
+3. **CartItem**: Individual cart item component
+4. **OrderSummary**: Price breakdown and totals
+5. **CartActions**: Checkout and action buttons
+6. **EmptyCart**: Empty state component
+
+### Sub-Components
+- **QuantityControls**: Plus/minus buttons with input
+- **RemoveButton**: Delete item button
+- **PriceDisplay**: Formatted price with currency
+- **StockIndicator**: Stock availability display
+
+## Cart Operations
+
+### Add to Cart
+```javascript
+const handleAddToCart = (product, quantity = 1) => {
+  // Check if item already exists
+  const existingItem = cartItems.find(item => item.id === product.id)
+  
+  if (existingItem) {
+    // Update quantity if within stock limits
+    const newQuantity = existingItem.quantity + quantity
+    if (newQuantity <= product.stock_quantity) {
+      updateQuantity(product.id, newQuantity)
+    } else {
+      toast.error('Cannot add more items than available stock')
+    }
+  } else {
+    // Add new item
+    addToCart(product, quantity)
+  }
+}
+```
+
+### Update Quantity
+```javascript
+const handleQuantityChange = (productId, newQuantity) => {
+  if (newQuantity <= 0) {
+    removeFromCart(productId)
+    toast.success('Item removed from cart')
+  } else {
+    const item = cartItems.find(item => item.id === productId)
+    if (newQuantity <= item.stock_quantity) {
+      updateQuantity(productId, newQuantity)
+    } else {
+      toast.error('Cannot add more items than available stock')
+    }
+  }
+}
+```
+
+### Remove Item
+```javascript
+const handleRemoveItem = (productId) => {
+  removeFromCart(productId)
+  toast.success('Item removed from cart')
+}
+```
+
+## UI/UX Guidelines
+
+### Responsive Design
+- **Mobile**: Single column layout, stacked summary
+- **Tablet**: Side-by-side items and summary
+- **Desktop**: Two-column layout with fixed summary
+
+### Loading States
+- Skeleton loaders for cart items
+- Loading spinner for quantity updates
+- Disabled states during operations
+
+### Interactions
+- Smooth animations for quantity changes
+- Hover effects on buttons
+- Toast notifications for all actions
+- Confirmation dialogs for destructive actions
+
+## Price Calculations
+
+### Subtotal
+```javascript
+const subtotal = cartItems.reduce((total, item) => {
+  return total + (item.price * item.quantity)
+}, 0)
+```
+
+### Total with Discounts
+```javascript
+const total = subtotal + shipping + tax - discount
+```
+
+### Currency Formatting
+```javascript
+const formatPrice = (price) => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD'
+  }).format(price)
+}
+```
+
+## Stock Management
+
+### Stock Validation
+- Check stock quantity before adding items
+- Prevent quantity updates exceeding stock
+- Show stock indicators on items
+- Disable add to cart for out-of-stock items
+
+### Stock Indicators
+- "In Stock" for available items
+- "Low Stock" for items with < 5 quantity
+- "Out of Stock" for unavailable items
+- Stock count display
+
+## Checkout Flow
+
+### Authentication Check
+```javascript
+const handleCheckout = () => {
+  if (!isAuthenticated) {
+    toast.error('Please login to proceed with checkout')
+    navigate('/login')
+    return
+  }
+  
+  if (cartItems.length === 0) {
+    toast.error('Your cart is empty')
+    return
+  }
+  
+  navigate('/checkout')
+}
+```
+
+### Cart Validation
+- Check for empty cart
+- Validate all items are in stock
+- Ensure user is authenticated
+- Verify cart totals are correct
+
+## Persistence Strategy
+
+### Local Storage
+- Cart data persists across browser sessions
+- Automatic cart restoration on page load
+- Backup cart data in case of errors
+
+### Sync with Database (Future)
+- Sync cart with user account
+- Cross-device cart access
+- Cart recovery for logged-in users
+
+## Error Handling
+
+### Network Errors
+- Retry mechanism for failed operations
+- Offline cart functionality
+- Graceful degradation for missing data
+
+### Validation Errors
+- Stock quantity validation
+- Price calculation errors
+- Invalid item data handling
+
+### User Feedback
+- Toast notifications for all actions
+- Error messages for failed operations
+- Success confirmations for completed actions
+
+## Accessibility Features
+
+### Keyboard Navigation
+- Tab order through all interactive elements
+- Enter key support for buttons
+- Escape key to close modals
+
+### Screen Reader Support
+- Proper ARIA labels for all controls
+- Announcements for quantity changes
+- Descriptive button labels
+
+### Focus Management
+- Focus indicators for all interactive elements
+- Focus restoration after operations
+- Logical tab order
+
+## Performance Considerations
+
+### Optimistic Updates
+- Immediate UI updates for quantity changes
+- Background sync with server
+- Rollback on failed operations
+
+### Debounced Operations
+- Debounce quantity input changes
+- Batch multiple cart operations
+- Efficient re-renders
+
+## Testing Scenarios
+
+### Cart Operations
+1. **Add Item**: Add product → see in cart
+2. **Update Quantity**: Change quantity → see updated total
+3. **Remove Item**: Remove item → see updated cart
+4. **Clear Cart**: Clear all → see empty state
+
+### Edge Cases
+- Maximum quantity reached
+- Out of stock items
+- Network connectivity issues
+- Invalid cart data
+
+### User Flows
+1. **Guest User**: Add items → see login prompt
+2. **Authenticated User**: Add items → proceed to checkout
+3. **Empty Cart**: Navigate to cart → see empty state
+
+## Implementation Notes
+
+### File Location
+```
+src/pages/Cart/Cart.jsx
+```
+
+### Dependencies
+- React Router for navigation
+- Sonner for toast notifications
+- Zustand stores for state management
+- Lucide React for icons
+
+### Key Functions to Implement
+- `handleQuantityChange(productId, quantity)`: Update item quantity
+- `handleRemoveItem(productId)`: Remove item from cart
+- `handleClearCart()`: Remove all items
+- `handleCheckout()`: Proceed to checkout
+- `handleContinueShopping()`: Navigate to products
+
+### Local Storage Integration
+```javascript
+// Save cart to localStorage
+const saveCart = (cartItems) => {
+  localStorage.setItem('cart', JSON.stringify(cartItems))
+}
+
+// Load cart from localStorage
+const loadCart = () => {
+  const saved = localStorage.getItem('cart')
+  return saved ? JSON.parse(saved) : []
+}
+```
+
+This context provides comprehensive guidance for implementing the Cart page with full cart management functionality and checkout preparation. 

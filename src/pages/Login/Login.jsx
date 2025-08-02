@@ -1,0 +1,402 @@
+import React, { useState, useEffect } from 'react'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Mail, Lock, Eye, EyeOff, User, Phone, ArrowRight, CheckCircle, XCircle } from 'lucide-react'
+import useAuthStore from '@/stores/useAuthStore'
+import { toast } from 'sonner'
+import loginBg from '@/assets/login-bg.jpg'
+import logo from '../../assets/logo.png'
+import { supabase } from '@/db/supabase'
+
+const Login = () => {
+  const [isLoginMode, setIsLoginMode] = useState(true)
+  const [formData, setFormData] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: ''
+  })
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [emailExists, setEmailExists] = useState(null)
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false)
+
+  const { signIn, signUp, error, clearError, isAuthenticated } = useAuthStore()
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      const from = location.state?.from?.pathname || '/'
+      navigate(from, { replace: true })
+    }
+  }, [isAuthenticated, navigate, location])
+
+  // Check if email exists when user types in registration mode
+  useEffect(() => {
+    const checkEmailExists = async () => {
+      if (!isLoginMode && formData.email && formData.email.includes('@')) {
+        setIsCheckingEmail(true)
+        try {
+          const { data, error } = await supabase
+            .from('users')
+            .select('email')
+            .eq('email', formData.email)
+            .single()
+
+          setEmailExists(!!data)
+        } catch (error) {
+          setEmailExists(false)
+        } finally {
+          setIsCheckingEmail(false)
+        }
+      } else {
+        setEmailExists(null)
+      }
+    }
+
+    const timeoutId = setTimeout(checkEmailExists, 500)
+    return () => clearTimeout(timeoutId)
+  }, [formData.email, isLoginMode])
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    })
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+
+    if (isLoginMode) {
+      // Login mode
+      if (!formData.email || !formData.password) {
+        toast.error('Please fill in all fields')
+        return
+      }
+
+      setIsLoading(true)
+      clearError()
+
+      try {
+        await signIn(formData.email, formData.password)
+        toast.success('Login successful!')
+
+        // Redirect to the page they were trying to access, or home
+        const from = location.state?.from?.pathname || '/'
+        navigate(from, { replace: true })
+      } catch (error) {
+        toast.error(error.message || 'Login failed')
+      } finally {
+        setIsLoading(false)
+      }
+    } else {
+      // Register mode
+      if (!formData.fullName || !formData.email || !formData.phone || !formData.password || !formData.confirmPassword) {
+        toast.error('Please fill in all fields')
+        return
+      }
+
+      if (formData.password !== formData.confirmPassword) {
+        toast.error('Passwords do not match')
+        return
+      }
+
+      if (formData.password.length < 6) {
+        toast.error('Password must be at least 6 characters long')
+        return
+      }
+
+      // Check if email already exists
+      if (emailExists === true) {
+        toast.error('An account with this email already exists. Please sign in instead.')
+        return
+      }
+
+      setIsLoading(true)
+      clearError()
+
+      try {
+        await signUp(formData.email, formData.password, formData.fullName, formData.phone)
+        toast.success('Registration successful! Please check your email to verify your account.')
+
+        // Redirect to the page they were trying to access, or home
+        const from = location.state?.from?.pathname || '/'
+        navigate(from, { replace: true })
+      } catch (error) {
+        // Handle specific error cases
+        if (error.message.includes('already exists')) {
+          toast.error(error.message)
+          // Switch to login mode since the user already has an account
+          setIsLoginMode(true)
+          setFormData({
+            fullName: '',
+            email: formData.email, // Keep the email for convenience
+            phone: '',
+            password: '',
+            confirmPassword: ''
+          })
+        } else {
+          toast.error(error.message || 'Registration failed')
+        }
+      } finally {
+        setIsLoading(false)
+      }
+    }
+  }
+
+  const toggleMode = () => {
+    setIsLoginMode(!isLoginMode)
+    setFormData({
+      fullName: '',
+      email: '',
+      phone: '',
+      password: '',
+      confirmPassword: ''
+    })
+    setEmailExists(null)
+    clearError()
+  }
+
+  return (
+    <div className="min-h-screen flex justify-center items-center p-4 sm:p-6 lg:p-8">
+      <Card className="shadow-xl border-[1px] border-gray-200 rounded-xl bg-white flex flex-col lg:flex-row justify-center gap-0 p-0 m-0 w-full max-w-6xl h-auto lg:h-[80vh]">
+        {/* Form Section */}
+        <div className='w-full lg:w-1/2 p-4 sm:p-6 lg:p-8 overflow-y-auto'>
+          <CardHeader className="pb-4 sm:pb-6 px-0">
+            <div className="flex flex-col items-center sm:items-start space-y-4">
+              <img src={logo} alt="logo" className='w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24' />
+              <div className="text-center sm:text-left">
+                <CardTitle className="text-xl sm:text-2xl lg:text-3xl font-semibold text-gray-900">
+                  {isLoginMode ? 'Welcome Back!' : 'Create Your Account'}
+                </CardTitle>
+                <CardDescription className="text-sm sm:text-base text-gray-600 mt-2">
+                  {isLoginMode
+                    ? 'Enter your credentials to access your professional dashboard'
+                    : 'Fill in your details to create your professional account'
+                  }
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+
+          <CardContent className="space-y-4 sm:space-y-6 px-0">
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+              {error && (
+                <Alert variant="destructive" className="border-red-200 bg-red-50">
+                  <AlertDescription className="text-red-800 text-sm">{error}</AlertDescription>
+                </Alert>
+              )}
+
+              {/* Full Name - Only for Register */}
+              {!isLoginMode && (
+                <div className="space-y-2">
+                  <Label htmlFor="fullName" className="text-sm font-medium text-gray-700">
+                    Full Name
+                  </Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 sm:h-5 sm:w-5" />
+                    <Input
+                      id="fullName"
+                      name="fullName"
+                      type="text"
+                      placeholder="Enter your full name"
+                      value={formData.fullName}
+                      onChange={handleChange}
+                      className="pl-10 h-11 sm:h-12 border-gray-200 focus:border-green-600 focus:ring-green-600 text-sm sm:text-base"
+                      required={!isLoginMode}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Email */}
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                  Email Address
+                </Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 sm:h-5 sm:w-5" />
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="Enter your email address"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className={`pl-10 h-11 sm:h-12 border-gray-200 focus:border-green-600 focus:ring-green-600 text-sm sm:text-base ${emailExists === true ? 'border-red-300 focus:border-red-600 focus:ring-red-600' :
+                      emailExists === false ? 'border-green-300 focus:border-green-600 focus:ring-green-600' : ''
+                      }`}
+                    required
+                  />
+                </div>
+                {isCheckingEmail && (
+                  <div className="flex items-center text-sm text-gray-500 mt-1">
+                    <svg className="mr-1 h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Checking email...
+                  </div>
+                )}
+                {emailExists === true && !isCheckingEmail && (
+                  <div className="flex items-center text-sm text-red-600 mt-1">
+                    <XCircle className="mr-1 h-4 w-4" />
+                    Email already in use. Please sign in instead.
+                  </div>
+                )}
+                {emailExists === false && !isCheckingEmail && !isLoginMode && (
+                  <div className="flex items-center text-sm text-green-600 mt-1">
+                    <CheckCircle className="mr-1 h-4 w-4" />
+                    Email available.
+                  </div>
+                )}
+              </div>
+
+              {/* Phone Number - Only for Register */}
+              {!isLoginMode && (
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="text-sm font-medium text-gray-700">
+                    Phone Number
+                  </Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 sm:h-5 sm:w-5" />
+                    <Input
+                      id="phone"
+                      name="phone"
+                      type="tel"
+                      placeholder="Enter your phone number"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      className="pl-10 h-11 sm:h-12 border-gray-200 focus:border-green-600 focus:ring-green-600 text-sm sm:text-base"
+                      required={!isLoginMode}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Password */}
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                  Password
+                </Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 sm:h-5 sm:w-5" />
+                  <Input
+                    id="password"
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Enter your password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    className="pl-10 pr-10 h-11 sm:h-12 border-gray-200 focus:border-green-600 focus:ring-green-600 text-sm sm:text-base"
+                    required
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors h-auto p-1"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4 sm:h-5 sm:w-5" /> : <Eye className="h-4 w-4 sm:h-5 sm:w-5" />}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Confirm Password - Only for Register */}
+              {!isLoginMode && (
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
+                    Confirm Password
+                  </Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 sm:h-5 sm:w-5" />
+                    <Input
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      placeholder="Confirm your password"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      className="pl-10 pr-10 h-11 sm:h-12 border-gray-200 focus:border-green-600 focus:ring-green-600 text-sm sm:text-base"
+                      required={!isLoginMode}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors h-auto p-1"
+                    >
+                      {showConfirmPassword ? <EyeOff className="h-4 w-4 sm:h-5 sm:w-5" /> : <Eye className="h-4 w-4 sm:h-5 sm:w-5" />}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                className="w-full h-11 sm:h-12 bg-gradient-to-r from-green-800 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold text-base sm:text-lg shadow-lg hover:shadow-xl transition-all duration-200"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-sm sm:text-base">{isLoginMode ? 'Signing in...' : 'Creating account...'}</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center space-x-2">
+                    <span className="text-sm sm:text-base">{isLoginMode ? 'Sign In' : 'Create Account'}</span>
+                    <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5" />
+                  </div>
+                )}
+              </Button>
+            </form>
+
+            <div className="text-center pt-2 pb-4">
+              <p className="text-gray-600 text-sm sm:text-base">
+                {isLoginMode ? "Don't have an account?" : "Already have an account?"}{' '}
+                <Button
+                  variant="link"
+                  onClick={toggleMode}
+                  className="font-semibold text-green-600 hover:text-green-700 transition-colors p-0 h-auto text-sm sm:text-base"
+                >
+                  {isLoginMode ? 'Sign up' : 'Sign in'}
+                </Button>
+              </p>
+            </div>
+          </CardContent>
+        </div>
+
+        {/* Image Section */}
+        <div className="hidden lg:block lg:w-1/2 relative">
+          <img
+            src={loginBg}
+            alt="Professional Login Background"
+            className="w-full h-full object-cover object-center rounded-r-xl"
+          />
+        </div>
+
+        {/* Mobile/Tablet Image - Only visible on smaller screens */}
+        <div className="lg:hidden w-full h-32 sm:h-40 relative">
+          <img
+            src={loginBg}
+            alt="Professional Login Background"
+            className="w-full h-full object-cover object-center rounded-b-xl"
+          />
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+export default Login

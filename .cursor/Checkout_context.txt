@@ -1,0 +1,349 @@
+# Checkout Page Context
+
+## Page Overview
+The Checkout page is the final step in the purchase process where users review their order, provide requirements, and send their order to WhatsApp for completion. This page integrates with WhatsApp to facilitate direct communication between customers and the business.
+
+## Page Features
+
+### 1. Order Summary
+- **Cart Items**: List of all items with quantities and prices
+- **Price Breakdown**: Subtotal, shipping, taxes, and total
+- **Item Count**: Total number of items in order
+- **Requirements Field**: Text area for special requirements
+
+### 2. Customer Information
+- **Name**: Pre-filled from user profile
+- **Email**: Pre-filled from user profile
+- **Mobile**: Pre-filled from user profile
+- **Address**: Optional delivery address
+- **Additional Notes**: Special instructions or preferences
+
+### 3. WhatsApp Integration
+- **Send to WhatsApp Button**: Primary CTA to send order
+- **Order Message**: Formatted message with all order details
+- **WhatsApp Redirect**: Opens WhatsApp with pre-filled message
+- **Order Tracking**: Update order status in database
+
+### 4. Order Confirmation
+- **Success State**: Confirmation after WhatsApp message sent
+- **Order ID**: Unique identifier for tracking
+- **Next Steps**: Instructions for customer
+- **Cart Clear**: Remove items from cart after successful order
+
+## Data Requirements
+
+### Order Data Structure
+```javascript
+{
+  id: "uuid",
+  user_id: "integer",
+  product_id: "uuid",
+  quantity: "integer",
+  requirements: "string",
+  order_status: "pending",
+  whatsapp_sent: "boolean",
+  whatsapp_sent_at: "timestamp",
+  created_at: "timestamp"
+}
+```
+
+### Customer Data Structure
+```javascript
+{
+  name: "string",
+  email: "string",
+  mobile: "string",
+  address: "string",
+  notes: "string"
+}
+```
+
+## State Management
+
+### Required Stores
+- **useCartStore**: Cart items and totals
+- **useAuthStore**: User authentication and profile
+- **useOrderStore**: Order creation and management
+
+### Key Functions
+```javascript
+// From useCartStore
+const {
+  cartItems,
+  getCartTotal,
+  clearCart,
+  getCartItemCount
+} = useCartStore()
+
+// From useAuthStore
+const { user, isAuthenticated } = useAuthStore()
+
+// From useOrderStore
+const { createOrder, updateOrderStatus } = useOrderStore()
+```
+
+## Component Structure
+
+### Main Components
+1. **OrderSummary**: Cart items and price breakdown
+2. **CustomerInfo**: User information form
+3. **RequirementsForm**: Special requirements input
+4. **WhatsAppButton**: Send order to WhatsApp
+5. **OrderConfirmation**: Success state after order
+
+### Sub-Components
+- **OrderItem**: Individual item display
+- **PriceBreakdown**: Subtotal, shipping, total
+- **CustomerForm**: User information fields
+- **RequirementsInput**: Special requirements textarea
+
+## WhatsApp Integration
+
+### Message Formatting
+```javascript
+const formatWhatsAppMessage = (orderData, customerData) => {
+  const items = orderData.items.map(item => 
+    `• ${item.name} - Qty: ${item.quantity} - Price: $${item.price}`
+  ).join('\n')
+  
+  return `🛒 *New Order Request*
+
+*Customer:* ${customerData.name}
+*Phone:* ${customerData.mobile}
+*Email:* ${customerData.email}
+
+*Order Items:*
+${items}
+
+*Requirements:* ${orderData.requirements || 'None specified'}
+
+*Total Amount:* $${orderData.total}
+
+*Order ID:* ${orderData.id}
+
+Please contact the customer to complete the order.`
+}
+```
+
+### WhatsApp Redirect
+```javascript
+const sendToWhatsApp = (message) => {
+  const whatsappNumber = import.meta.env.VITE_WHATSAPP_NUMBER
+  const encodedMessage = encodeURIComponent(message)
+  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`
+  
+  window.open(whatsappUrl, '_blank')
+}
+```
+
+## Order Processing Flow
+
+### Order Creation
+```javascript
+const handleCreateOrder = async (orderData) => {
+  try {
+    setIsLoading(true)
+    
+    // Create order in database
+    const { data: order, error } = await createOrder({
+      user_id: user.id,
+      product_id: orderData.product_id,
+      quantity: orderData.quantity,
+      requirements: orderData.requirements,
+      order_status: 'pending'
+    })
+    
+    if (error) {
+      throw error
+    }
+    
+    // Format WhatsApp message
+    const message = formatWhatsAppMessage(orderData, customerData)
+    
+    // Send to WhatsApp
+    sendToWhatsApp(message)
+    
+    // Update order status
+    await updateOrderStatus(order.id, {
+      whatsapp_sent: true,
+      whatsapp_sent_at: new Date().toISOString()
+    })
+    
+    // Clear cart
+    clearCart()
+    
+    // Show success state
+    setOrderSuccess(true)
+    setOrderId(order.id)
+    
+  } catch (error) {
+    setError('Failed to create order. Please try again.')
+  } finally {
+    setIsLoading(false)
+  }
+}
+```
+
+## UI/UX Guidelines
+
+### Page Layout
+- **Mobile**: Single column, stacked sections
+- **Tablet**: Two-column layout with summary sidebar
+- **Desktop**: Two-column layout with fixed summary
+
+### Loading States
+- **Button Loading**: Spinner in WhatsApp button
+- **Form Disabled**: Disable inputs during processing
+- **Progress Indicator**: Show order creation progress
+
+### Success States
+- **Confirmation Message**: Clear success feedback
+- **Order Details**: Show order ID and next steps
+- **Navigation Options**: Links to continue shopping
+
+## Form Validation
+
+### Customer Information
+```javascript
+const validateCustomerInfo = (data) => {
+  const errors = {}
+  
+  if (!data.name) {
+    errors.name = 'Name is required'
+  }
+  
+  if (!data.email) {
+    errors.email = 'Email is required'
+  } else if (!isValidEmail(data.email)) {
+    errors.email = 'Please enter a valid email'
+  }
+  
+  if (!data.mobile) {
+    errors.mobile = 'Mobile number is required'
+  }
+  
+  return errors
+}
+```
+
+### Requirements Validation
+- Optional field
+- Maximum 500 characters
+- Sanitize input for WhatsApp
+- Remove special characters if needed
+
+## Error Handling
+
+### Order Creation Errors
+- Database connection issues
+- Invalid user data
+- Cart validation errors
+- WhatsApp integration failures
+
+### User Feedback
+- Clear error messages
+- Retry mechanisms
+- Fallback options
+- Success confirmations
+
+## Security Considerations
+
+### Data Validation
+- Sanitize user inputs
+- Validate order data
+- Check user permissions
+- Prevent duplicate orders
+
+### WhatsApp Security
+- Validate phone numbers
+- Sanitize message content
+- Handle special characters
+- URL encoding for messages
+
+## Accessibility Features
+
+### Form Accessibility
+- Proper form labels
+- Error message associations
+- Required field indicators
+- Keyboard navigation support
+
+### WhatsApp Integration
+- Clear button labels
+- Loading state announcements
+- Success confirmations
+- Error message accessibility
+
+## Performance Considerations
+
+### Order Processing
+- Optimistic UI updates
+- Background order creation
+- Efficient data validation
+- Minimal API calls
+
+### WhatsApp Integration
+- Fast message formatting
+- Efficient URL encoding
+- Quick WhatsApp redirect
+- Fallback for failures
+
+## Testing Scenarios
+
+### Order Flows
+1. **Valid Order**: Fill form → send to WhatsApp → success
+2. **Invalid Data**: Submit invalid form → see errors
+3. **Network Error**: Connection issues → error handling
+4. **WhatsApp Failure**: WhatsApp not available → fallback
+
+### Edge Cases
+- Empty cart
+- Invalid user data
+- Network connectivity issues
+- WhatsApp not installed
+- Large order requirements
+
+### User Flows
+1. **Authenticated User**: Cart → checkout → WhatsApp
+2. **Guest User**: Redirect to login
+3. **Empty Cart**: Redirect to products
+
+## Implementation Notes
+
+### File Location
+```
+src/pages/Checkout/Checkout.jsx
+```
+
+### Dependencies
+- React Hook Form for form management
+- React Router for navigation
+- Sonner for notifications
+- Zustand stores for state management
+- WhatsApp integration utilities
+
+### Key Functions to Implement
+- `handleSubmit(orderData)`: Process order creation
+- `formatWhatsAppMessage(order, customer)`: Format message
+- `sendToWhatsApp(message)`: Send to WhatsApp
+- `handleOrderSuccess(orderId)`: Handle success state
+- `validateOrderData(data)`: Validate order information
+
+### Environment Variables
+```javascript
+VITE_WHATSAPP_NUMBER=your_whatsapp_number
+VITE_WHATSAPP_MESSAGE_TEMPLATE=your_message_template
+```
+
+### Order Status Tracking
+```javascript
+const orderStatuses = {
+  pending: 'Pending',
+  confirmed: 'Confirmed',
+  processing: 'Processing',
+  completed: 'Completed',
+  cancelled: 'Cancelled'
+}
+```
+
+This context provides comprehensive guidance for implementing the Checkout page with WhatsApp integration and complete order processing functionality. 

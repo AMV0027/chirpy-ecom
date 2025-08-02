@@ -1,0 +1,308 @@
+# Products Page Context
+
+## Page Overview
+The Products page displays a comprehensive catalog of all available products with advanced filtering, search, and sorting capabilities. Users can browse products by category, price range, and other criteria.
+
+## Page Features
+
+### 1. Search and Filter Bar
+- **Search Input**: Real-time search across product names and descriptions
+- **Category Filter**: Dropdown to filter by product category
+- **Price Range**: Min/max price sliders or input fields
+- **Sort Options**: Name (A-Z, Z-A), Price (Low-High, High-Low), Date (Newest, Oldest)
+- **Clear Filters**: Button to reset all filters
+
+### 2. Product Grid
+- **Layout**: Responsive grid (1 col mobile, 2 cols tablet, 3-4 cols desktop)
+- **Product Cards**: Consistent with Home page design
+- **Pagination**: Load more button or numbered pagination
+- **Empty State**: Message when no products match filters
+
+### 3. Filter Sidebar (Desktop)
+- **Categories**: Checkbox list of all available categories
+- **Price Range**: Slider with min/max inputs
+- **Rating Filter**: Star rating filter (1-5 stars)
+- **Availability**: In stock/out of stock toggle
+- **Discount**: On sale filter
+
+### 4. Product Count and Results
+- **Results Counter**: "Showing X of Y products"
+- **Active Filters**: Chips showing applied filters
+- **Quick Actions**: Sort dropdown, view toggle (grid/list)
+
+## Data Requirements
+
+### Products Query Parameters
+```javascript
+// Filter parameters
+{
+  search: "string",
+  category: "string",
+  minPrice: "number",
+  maxPrice: "number",
+  sortBy: "name" | "price" | "created_at",
+  sortOrder: "asc" | "desc",
+  page: "number",
+  limit: "number"
+}
+```
+
+### Product Data Structure
+```javascript
+{
+  id: "uuid",
+  name: "string",
+  price: "numeric",
+  discount: "numeric",
+  images: ["string[]"],
+  category: "string",
+  rating: "numeric",
+  review_count: "integer",
+  hide: "boolean",
+  created_at: "timestamp"
+}
+```
+
+## State Management
+
+### Required Stores
+- **useProductStore**: Main products data and filtering
+- **useCartStore**: Add to cart functionality
+- **useCollectionStore**: Categories data
+
+### Key Functions
+```javascript
+// From useProductStore
+const {
+  products,
+  filteredProducts,
+  isLoading,
+  filters,
+  applyFilters,
+  clearFilters,
+  fetchProducts
+} = useProductStore()
+
+// From useCartStore
+const { addToCart } = useCartStore()
+```
+
+## Component Structure
+
+### Main Components
+1. **SearchAndFilterBar**: Search input and filter controls
+2. **FilterSidebar**: Advanced filters (desktop only)
+3. **ProductGrid**: Product display grid
+4. **Pagination**: Load more or numbered pagination
+5. **EmptyState**: No results message
+
+### Sub-Components
+- **ProductCard**: Individual product display
+- **FilterChip**: Applied filter indicator
+- **SortDropdown**: Sort options
+- **PriceRangeSlider**: Price filter component
+
+## API Integration
+
+### Supabase Queries
+```javascript
+// Base products query
+let query = supabase
+  .from('products')
+  .select('*')
+  .eq('hide', false)
+
+// Apply filters
+if (filters.category) {
+  query = query.eq('category', filters.category)
+}
+
+if (filters.minPrice) {
+  query = query.gte('price', filters.minPrice)
+}
+
+if (filters.maxPrice) {
+  query = query.lte('price', filters.maxPrice)
+}
+
+// Apply search
+if (filters.search) {
+  query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`)
+}
+
+// Apply sorting
+query = query.order(filters.sortBy, { ascending: filters.sortOrder === 'asc' })
+
+// Apply pagination
+query = query.range((page - 1) * limit, page * limit - 1)
+```
+
+## UI/UX Guidelines
+
+### Responsive Design
+- **Mobile**: Full-width filters, single column grid
+- **Tablet**: Collapsible filter sidebar, 2-column grid
+- **Desktop**: Fixed sidebar, 3-4 column grid
+
+### Loading States
+- Skeleton loaders for product cards
+- Loading spinner for filter changes
+- Progressive loading for pagination
+
+### Interactions
+- Debounced search input (300ms delay)
+- Instant filter updates
+- Smooth transitions between states
+- Toast notifications for cart actions
+
+## Filter System
+
+### Search Functionality
+- Real-time search as user types
+- Search across product name and description
+- Highlight matching terms in results
+- Search suggestions (future enhancement)
+
+### Category Filtering
+- Multi-select category filter
+- Category count indicators
+- "All Categories" option
+- URL parameter support
+
+### Price Filtering
+- Range slider with min/max inputs
+- Price formatting and validation
+- Clear price filter option
+- Currency symbol support
+
+### Sorting Options
+- Name: A-Z, Z-A
+- Price: Low to High, High to Low
+- Date: Newest First, Oldest First
+- Rating: Highest Rated, Lowest Rated
+
+## Pagination Strategy
+
+### Load More Button
+- Simple "Load More" button
+- Shows remaining count
+- Disabled when no more products
+- Loading state during fetch
+
+### Alternative: Numbered Pagination
+- Page numbers with ellipsis
+- Previous/Next buttons
+- Current page indicator
+- URL parameter support
+
+## URL State Management
+
+### Query Parameters
+```
+/products?search=laptop&category=electronics&minPrice=100&maxPrice=500&sortBy=price&sortOrder=asc&page=1
+```
+
+### URL Sync
+- Update URL when filters change
+- Parse URL parameters on page load
+- Browser back/forward support
+- Shareable filtered URLs
+
+## Performance Considerations
+
+### Data Fetching
+- Debounced search to reduce API calls
+- Cache filtered results
+- Lazy loading for product images
+- Optimistic UI updates
+
+### Virtual Scrolling (Future)
+- For large product catalogs
+- Render only visible products
+- Smooth scrolling performance
+- Memory efficient
+
+## Accessibility Features
+
+### Filter Accessibility
+- Proper ARIA labels for all filters
+- Keyboard navigation for filter options
+- Screen reader announcements for filter changes
+- Focus management for filter interactions
+
+### Search Accessibility
+- Search input with proper label
+- Search results announcement
+- Clear search button
+- Search suggestions for screen readers
+
+## Error Handling
+
+### Network Errors
+- Retry mechanism for failed requests
+- Offline state handling
+- Graceful degradation for missing data
+- User-friendly error messages
+
+### Filter Errors
+- Invalid filter combinations
+- Empty search results
+- Price range validation
+- Category validation
+
+## SEO Considerations
+
+### Meta Tags
+- Dynamic page title with search terms
+- Meta description with filtered results
+- Canonical URLs for filtered pages
+- Open Graph tags for social sharing
+
+### Structured Data
+- Product schema for all displayed items
+- Breadcrumb navigation
+- Filter schema markup
+- Pagination schema
+
+## Testing Scenarios
+
+### Filter Functionality
+1. **Search**: Type search term → see filtered results
+2. **Category Filter**: Select category → see category products
+3. **Price Filter**: Set price range → see filtered results
+4. **Sort**: Change sort order → see reordered results
+5. **Clear Filters**: Click clear → see all products
+
+### Edge Cases
+- No search results
+- Invalid filter combinations
+- Network timeouts
+- Large result sets
+- Empty categories
+
+## Implementation Notes
+
+### File Location
+```
+src/pages/Products/Products.jsx
+```
+
+### Dependencies
+- React Router for navigation and URL params
+- React Hook Form for filter forms
+- Debounce utility for search
+- Zustand stores for state management
+
+### Key Functions to Implement
+- `handleSearch(term)`: Debounced search function
+- `handleFilterChange(filters)`: Update filters and refetch
+- `handleSortChange(sortBy, sortOrder)`: Change sort order
+- `handleLoadMore()`: Load additional products
+- `handleAddToCart(product)`: Add product to cart
+
+### URL Management
+- `useSearchParams` for URL state
+- `useEffect` for URL parameter parsing
+- `useNavigate` for programmatic navigation
+
+This context provides comprehensive guidance for implementing the Products page with advanced filtering, search, and pagination capabilities. 

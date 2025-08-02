@@ -1,0 +1,447 @@
+# MyOrders Page Context
+
+## Page Overview
+The MyOrders page displays a comprehensive history of all user orders with detailed tracking information, order status updates, and the ability to reorder or contact support. This is a protected page that requires user authentication.
+
+## Page Features
+
+### 1. Order List
+- **Order Cards**: Individual order display with key information
+- **Order Status**: Visual status indicators (pending, confirmed, processing, completed, cancelled)
+- **Order Details**: Date, items, total amount, requirements
+- **Quick Actions**: Track order, contact support, reorder
+
+### 2. Order Filtering
+- **Status Filter**: Filter by order status
+- **Date Range**: Filter by order date
+- **Search**: Search orders by product name or order ID
+- **Sort Options**: Sort by date, status, or amount
+
+### 3. Order Details Modal
+- **Full Order Info**: Complete order details
+- **Product List**: All items in the order
+- **Status Timeline**: Order progress timeline
+- **Contact Info**: Support contact information
+
+### 4. Order Actions
+- **Track Order**: Link to order tracking
+- **Contact Support**: WhatsApp integration for support
+- **Reorder**: Quick reorder functionality
+- **Download Invoice**: PDF invoice download (future)
+
+## Data Requirements
+
+### Order Data Structure
+```javascript
+{
+  id: "uuid",
+  user_id: "integer",
+  product_id: "uuid",
+  quantity: "integer",
+  requirements: "string",
+  order_status: "pending" | "confirmed" | "processing" | "completed" | "cancelled",
+  is_completed: "boolean",
+  whatsapp_sent: "boolean",
+  whatsapp_sent_at: "timestamp",
+  notes: "string",
+  created_at: "timestamp",
+  updated_at: "timestamp",
+  product: {
+    id: "uuid",
+    name: "string",
+    price: "numeric",
+    images: ["string[]"]
+  }
+}
+```
+
+### Order Status Timeline
+```javascript
+{
+  status: "string",
+  timestamp: "timestamp",
+  description: "string",
+  icon: "string"
+}
+```
+
+## State Management
+
+### Required Stores
+- **useOrderStore**: Order data and operations
+- **useAuthStore**: User authentication
+- **useCartStore**: Reorder functionality
+
+### Key Functions
+```javascript
+// From useOrderStore
+const {
+  userOrders,
+  isLoading,
+  fetchUserOrders,
+  getOrderById,
+  updateOrderStatus
+} = useOrderStore()
+
+// From useAuthStore
+const { user, isAuthenticated } = useAuthStore()
+
+// From useCartStore
+const { addToCart } = useCartStore()
+```
+
+## Component Structure
+
+### Main Components
+1. **OrderList**: List of all user orders
+2. **OrderCard**: Individual order display
+3. **OrderFilter**: Filter and search controls
+4. **OrderDetails**: Detailed order information
+5. **OrderTimeline**: Order status timeline
+
+### Sub-Components
+- **OrderStatusBadge**: Status indicator
+- **OrderActions**: Action buttons
+- **OrderSummary**: Order summary display
+- **StatusTimeline**: Progress timeline
+- **FilterControls**: Search and filter
+
+## Order Display
+
+### Order Card Layout
+```javascript
+const OrderCard = ({ order }) => {
+  return (
+    <div className="order-card">
+      <div className="order-header">
+        <div className="order-id">Order #{order.id.slice(0, 8)}</div>
+        <OrderStatusBadge status={order.order_status} />
+        <div className="order-date">{formatDate(order.created_at)}</div>
+      </div>
+      
+      <div className="order-content">
+        <div className="product-info">
+          <img src={order.product.images[0]} alt={order.product.name} />
+          <div>
+            <h4>{order.product.name}</h4>
+            <p>Qty: {order.quantity}</p>
+            <p>Total: ${order.product.price * order.quantity}</p>
+          </div>
+        </div>
+        
+        {order.requirements && (
+          <div className="requirements">
+            <strong>Requirements:</strong> {order.requirements}
+          </div>
+        )}
+      </div>
+      
+      <div className="order-actions">
+        <button onClick={() => handleTrackOrder(order.id)}>Track Order</button>
+        <button onClick={() => handleContactSupport(order.id)}>Contact Support</button>
+        <button onClick={() => handleReorder(order)}>Reorder</button>
+      </div>
+    </div>
+  )
+}
+```
+
+### Order Status Indicators
+```javascript
+const orderStatuses = {
+  pending: {
+    label: 'Pending',
+    color: 'yellow',
+    icon: 'clock',
+    description: 'Order received, waiting for confirmation'
+  },
+  confirmed: {
+    label: 'Confirmed',
+    color: 'blue',
+    icon: 'check-circle',
+    description: 'Order confirmed, processing started'
+  },
+  processing: {
+    label: 'Processing',
+    color: 'purple',
+    icon: 'settings',
+    description: 'Order is being prepared'
+  },
+  completed: {
+    label: 'Completed',
+    color: 'green',
+    icon: 'check',
+    description: 'Order completed successfully'
+  },
+  cancelled: {
+    label: 'Cancelled',
+    color: 'red',
+    icon: 'x-circle',
+    description: 'Order has been cancelled'
+  }
+}
+```
+
+## Order Filtering and Search
+
+### Filter Implementation
+```javascript
+const filterOrders = (orders, filters) => {
+  return orders.filter(order => {
+    // Status filter
+    if (filters.status && order.order_status !== filters.status) {
+      return false
+    }
+    
+    // Date range filter
+    if (filters.dateFrom && new Date(order.created_at) < filters.dateFrom) {
+      return false
+    }
+    if (filters.dateTo && new Date(order.created_at) > filters.dateTo) {
+      return false
+    }
+    
+    // Search filter
+    if (filters.search) {
+      const searchTerm = filters.search.toLowerCase()
+      const matchesProduct = order.product.name.toLowerCase().includes(searchTerm)
+      const matchesOrderId = order.id.toLowerCase().includes(searchTerm)
+      if (!matchesProduct && !matchesOrderId) {
+        return false
+      }
+    }
+    
+    return true
+  })
+}
+```
+
+### Sort Options
+```javascript
+const sortOrders = (orders, sortBy, sortOrder) => {
+  return [...orders].sort((a, b) => {
+    let comparison = 0
+    
+    switch (sortBy) {
+      case 'date':
+        comparison = new Date(b.created_at) - new Date(a.created_at)
+        break
+      case 'status':
+        comparison = a.order_status.localeCompare(b.order_status)
+        break
+      case 'amount':
+        comparison = (b.product.price * b.quantity) - (a.product.price * a.quantity)
+        break
+      default:
+        comparison = new Date(b.created_at) - new Date(a.created_at)
+    }
+    
+    return sortOrder === 'asc' ? -comparison : comparison
+  })
+}
+```
+
+## Order Actions
+
+### Track Order
+```javascript
+const handleTrackOrder = (orderId) => {
+  // Navigate to order tracking page or open modal
+  navigate(`/order/${orderId}/track`)
+}
+```
+
+### Contact Support
+```javascript
+const handleContactSupport = (order) => {
+  const message = `Hi, I need support for my order #${order.id.slice(0, 8)}. 
+  
+Order Details:
+- Product: ${order.product.name}
+- Quantity: ${order.quantity}
+- Status: ${order.order_status}
+- Date: ${formatDate(order.created_at)}
+
+Please help me with this order.`
+  
+  const whatsappNumber = import.meta.env.VITE_WHATSAPP_NUMBER
+  const encodedMessage = encodeURIComponent(message)
+  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`
+  
+  window.open(whatsappUrl, '_blank')
+}
+```
+
+### Reorder
+```javascript
+const handleReorder = (order) => {
+  // Add the same product to cart
+  addToCart(order.product, order.quantity)
+  toast.success('Product added to cart!')
+  navigate('/cart')
+}
+```
+
+## API Integration
+
+### Fetch User Orders
+```javascript
+const fetchUserOrders = async (userId) => {
+  const { data: orders, error } = await supabase
+    .from('orders')
+    .select(`
+      *,
+      product:products(id, name, price, images)
+    `)
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+  
+  if (error) {
+    throw error
+  }
+  
+  return orders
+}
+```
+
+### Order Statistics
+```javascript
+const calculateOrderStats = (orders) => {
+  const totalOrders = orders.length
+  const completedOrders = orders.filter(o => o.order_status === 'completed').length
+  const totalSpent = orders
+    .filter(o => o.order_status === 'completed')
+    .reduce((sum, order) => sum + (order.product.price * order.quantity), 0)
+  
+  return {
+    totalOrders,
+    completedOrders,
+    totalSpent,
+    averageOrderValue: totalSpent / completedOrders || 0
+  }
+}
+```
+
+## UI/UX Guidelines
+
+### Order List Layout
+- **Mobile**: Single column, stacked cards
+- **Tablet**: Two-column grid
+- **Desktop**: Three-column grid with sidebar filters
+
+### Status Indicators
+- **Color-coded**: Different colors for each status
+- **Icons**: Visual icons for status
+- **Progress**: Timeline for order progress
+- **Animations**: Smooth status transitions
+
+### Loading States
+- **List Loading**: Skeleton for order cards
+- **Filter Loading**: Spinner for filter changes
+- **Action Loading**: Button loading states
+- **Detail Loading**: Modal loading state
+
+## Error Handling
+
+### Data Fetching Errors
+- **Network Issues**: Retry mechanism
+- **Empty Results**: Empty state message
+- **Invalid Data**: Graceful error handling
+- **Authentication**: Redirect to login
+
+### User Feedback
+- **Success Messages**: Action confirmations
+- **Error Messages**: Clear error descriptions
+- **Loading Indicators**: Progress feedback
+- **Empty States**: Helpful empty messages
+
+## Accessibility Features
+
+### Order Cards
+- **Semantic HTML**: Proper heading structure
+- **ARIA Labels**: Descriptive labels
+- **Keyboard Navigation**: Tab order
+- **Screen Reader**: Status announcements
+
+### Filter Controls
+- **Form Labels**: Clear input labels
+- **Error Messages**: Accessible error text
+- **Focus Management**: Logical focus order
+- **Status Indicators**: Color and text labels
+
+## Performance Considerations
+
+### Data Loading
+- **Pagination**: Load orders in pages
+- **Lazy Loading**: Load more on scroll
+- **Caching**: Cache order data
+- **Optimistic Updates**: Immediate UI updates
+
+### Image Optimization
+- **Lazy Loading**: Load product images as needed
+- **Responsive Images**: Different sizes for devices
+- **Placeholder Images**: Loading placeholders
+- **Error Fallbacks**: Default images on error
+
+## Testing Scenarios
+
+### Order Display
+1. **Load Orders**: Fetch orders → display list
+2. **Filter Orders**: Apply filter → see filtered results
+3. **Search Orders**: Search term → see matching orders
+4. **Sort Orders**: Change sort → see reordered list
+
+### Order Actions
+1. **Track Order**: Click track → open tracking
+2. **Contact Support**: Click support → open WhatsApp
+3. **Reorder**: Click reorder → add to cart
+4. **View Details**: Click order → open details
+
+### Edge Cases
+- No orders found
+- Network connectivity issues
+- Invalid order data
+- Authentication errors
+
+## Implementation Notes
+
+### File Location
+```
+src/pages/MyOrders/MyOrders.jsx
+```
+
+### Dependencies
+- React Router for navigation
+- React Hook Form for filters
+- Sonner for notifications
+- Zustand stores for state management
+- Date formatting library
+
+### Key Functions to Implement
+- `handleTrackOrder(orderId)`: Navigate to order tracking
+- `handleContactSupport(order)`: Open WhatsApp support
+- `handleReorder(order)`: Add to cart and navigate
+- `handleFilterChange(filters)`: Update order filters
+- `handleSearch(term)`: Search orders
+
+### Protected Route
+```javascript
+// Ensure user is authenticated
+if (!isAuthenticated) {
+  navigate('/login', { state: { redirect: '/my-orders' } })
+  return null
+}
+```
+
+### Order Status Configuration
+```javascript
+const orderStatusConfig = {
+  pending: { color: 'yellow', icon: 'clock' },
+  confirmed: { color: 'blue', icon: 'check-circle' },
+  processing: { color: 'purple', icon: 'settings' },
+  completed: { color: 'green', icon: 'check' },
+  cancelled: { color: 'red', icon: 'x-circle' }
+}
+```
+
+This context provides comprehensive guidance for implementing the MyOrders page with full order history, tracking, and management functionality. 
