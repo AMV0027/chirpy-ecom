@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Star, ShoppingCart, Heart, ChevronLeft, ChevronRight, Eye, Package, Grid3X3 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -79,88 +79,199 @@ const Home = () => {
 
 
 
-  const ProductSection = ({ title, products, viewAllLink, icon: Icon }) => (
-    <section className="py-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            {/* {Icon && <Icon className="h-6 w-6 text-blue-600" />} */}
-            <h2 className="text-2xl font-semibold text-gray-900">{title}</h2>
-          </div>
-          <Link to={viewAllLink}>
-            <Button variant="outline" size="sm">
-              View All
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </Link>
-        </div>
+  const ProductSection = ({ title, products, viewAllLink, icon: Icon }) => {
+    const scrollContainerRef = useRef(null)
+    const [canScrollLeft, setCanScrollLeft] = useState(false)
+    const [canScrollRight, setCanScrollRight] = useState(true)
 
-        <div className="relative">
-          <div className="flex space-x-6 overflow-x-auto pb-4 scrollbar-hide">
-            {products.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
-  )
+    const checkScrollButtons = () => {
+      if (scrollContainerRef.current) {
+        const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current
+        setCanScrollLeft(scrollLeft > 0)
+        setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1)
+      }
+    }
 
-  const CollectionSection = ({ title, collections, viewAllLink, icon: Icon }) => (
-    <section className="py-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-3">
-            <h2 className="text-2xl font-semibold text-gray-900">{title}</h2>
-          </div>
-          <Link to={viewAllLink}>
-            <Button variant="outline" size="sm">
-              View All
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </Link>
-        </div>
+    const scrollLeft = () => {
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollBy({ left: -300, behavior: 'smooth' })
+      }
+    }
 
-        <div className="relative">
-          <div className="flex space-x-6 overflow-x-auto pb-4 scrollbar-hide">
-            {/* Explore Collections Card */}
-            <div className="group relative bg-white border border-gray-200 hover:border-gray-300 transition-all duration-300 min-w-[300px]">
-              <Link to="/collections" className="block">
-                {/* Image Container */}
-                <div className="relative h-[400px] w-[300px] overflow-hidden bg-gray-50">
-                  <img src={collectionImage}
-                    className='w-full h-full'
-                    alt="" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-                  <div className="absolute inset-0 flex flex-col items-center justify-end text-white">
-                    <div className="text-center p-6">
-                      <h3 className="text-xl font-semibold mb-2">Explore All Collections</h3>
-                      <p className="text-sm text-gray-300 mb-4">
-                        Discover our complete range of handcrafted furniture and home decor
-                      </p>
-                    </div>
-                  </div>
-                </div>
+    const scrollRight = () => {
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollBy({ left: 300, behavior: 'smooth' })
+      }
+    }
 
-                {/* Content */}
-                <div className="p-4">
-                  {/* Collection Name */}
-                  <h3 className="font-semibold text-gray-900 text-base leading-tight mb-2">
-                    Browse All Collections
-                  </h3>
-                </div>
+    useEffect(() => {
+      checkScrollButtons()
+      const container = scrollContainerRef.current
+      if (container) {
+        container.addEventListener('scroll', checkScrollButtons)
+        return () => container.removeEventListener('scroll', checkScrollButtons)
+      }
+    }, [products])
+
+    return (
+      <section className="py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              {/* {Icon && <Icon className="h-6 w-6 text-blue-600" />} */}
+              <h2 className="text-2xl font-semibold text-gray-900">{title}</h2>
+            </div>
+            <div className="flex items-center space-x-2">
+              {/* Scroll Buttons */}
+              <button
+                onClick={scrollLeft}
+                disabled={!canScrollLeft}
+                className="p-1 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="h-4 w-4 text-gray-600" />
+              </button>
+              <button
+                onClick={scrollRight}
+                disabled={!canScrollRight}
+                className="p-1 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronRight className="h-4 w-4 text-gray-600" />
+              </button>
+              <Link to={viewAllLink}>
+                <Button variant="outline" size="sm">
+                  View All
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
               </Link>
             </div>
+          </div>
 
-            {/* Individual Collection Cards */}
-            {collections.map((collection) => (
-              <CollectionCard key={collection.id} collection={collection} getCollectionProducts={getCollectionProducts} />
-            ))}
+          <div className="relative">
+            <div
+              ref={scrollContainerRef}
+              className="flex space-x-6 overflow-x-auto pb-4 scrollbar-hide scroll-smooth"
+            >
+              {products.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
           </div>
         </div>
-      </div>
-    </section>
-  )
+      </section>
+    )
+  }
+
+  const CollectionSection = ({ title, collections, viewAllLink, icon: Icon }) => {
+    const scrollContainerRef = useRef(null)
+    const [canScrollLeft, setCanScrollLeft] = useState(false)
+    const [canScrollRight, setCanScrollRight] = useState(true)
+
+    const checkScrollButtons = () => {
+      if (scrollContainerRef.current) {
+        const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current
+        setCanScrollLeft(scrollLeft > 0)
+        setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1)
+      }
+    }
+
+    const scrollLeft = () => {
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollBy({ left: -300, behavior: 'smooth' })
+      }
+    }
+
+    const scrollRight = () => {
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollBy({ left: 300, behavior: 'smooth' })
+      }
+    }
+
+    useEffect(() => {
+      checkScrollButtons()
+      const container = scrollContainerRef.current
+      if (container) {
+        container.addEventListener('scroll', checkScrollButtons)
+        return () => container.removeEventListener('scroll', checkScrollButtons)
+      }
+    }, [collections])
+
+    return (
+      <section className="py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-3">
+              <h2 className="text-2xl font-semibold text-gray-900">{title}</h2>
+            </div>
+            <div className="flex items-center space-x-2">
+              {/* Scroll Buttons */}
+              <button
+                onClick={scrollLeft}
+                disabled={!canScrollLeft}
+                className="p-1 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="h-4 w-4 text-gray-600" />
+              </button>
+              <button
+                onClick={scrollRight}
+                disabled={!canScrollRight}
+                className="p-1 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronRight className="h-4 w-4 text-gray-600" />
+              </button>
+              <Link to={viewAllLink}>
+                <Button variant="outline" size="sm">
+                  View All
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+
+          <div className="relative">
+
+            <div
+              ref={scrollContainerRef}
+              className="flex space-x-6 overflow-x-auto pb-4 scrollbar-hide scroll-smooth"
+            >
+              {/* Explore Collections Card */}
+              <div className="group relative bg-white border border-gray-200 hover:border-gray-300 transition-all duration-300 min-w-[300px]">
+                <Link to="/collections" className="block">
+                  {/* Image Container */}
+                  <div className="relative h-[400px] w-[300px] overflow-hidden bg-gray-50">
+                    <img src={collectionImage}
+                      className='w-full h-full'
+                      alt="" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                    <div className="absolute inset-0 flex flex-col items-center justify-end text-white">
+                      <div className="text-center p-6">
+                        <h3 className="text-xl font-semibold mb-2">Explore All Collections</h3>
+                        <p className="text-sm text-gray-300 mb-4">
+                          Discover our complete range of handcrafted furniture and home decor
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Content */}
+                  <div className="p-4">
+                    {/* Collection Name */}
+                    <h3 className="font-semibold text-gray-900 text-base leading-tight mb-2">
+                      Browse All Collections
+                    </h3>
+                  </div>
+                </Link>
+              </div>
+
+              {/* Individual Collection Cards */}
+              {collections.map((collection) => (
+                <CollectionCard key={collection.id} collection={collection} getCollectionProducts={getCollectionProducts} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-white">

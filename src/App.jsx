@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import Layout from './components/layout/Layout'
 import ProtectedRoute from './routing/ProtectedRoute'
+import SplashScreen from './components/SplashScreen/SplashScreen'
 import Home from './pages/Home/Home'
 import Products from './pages/Products/Products'
 import ProductDetail from './pages/ProductDetail/ProductDetail'
@@ -17,11 +18,27 @@ import useAuthStore from './stores/useAuthStore'
 
 function App() {
   const { getCurrentSession } = useAuthStore()
+  const [showSplash, setShowSplash] = useState(true)
+  const [isInitialized, setIsInitialized] = useState(false)
 
   useEffect(() => {
     // Initialize authentication on app load
-    getCurrentSession()
+    const initializeApp = async () => {
+      await getCurrentSession()
+      setIsInitialized(true)
+    }
+
+    initializeApp()
   }, [getCurrentSession])
+
+  const handleSplashComplete = () => {
+    setShowSplash(false)
+  }
+
+  // Show splash screen until initialization is complete
+  if (showSplash || !isInitialized) {
+    return <SplashScreen onComplete={handleSplashComplete} />
+  }
 
   return (
     <Router>
