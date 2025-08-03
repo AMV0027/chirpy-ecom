@@ -19,21 +19,21 @@ function Loader() {
   }, [])
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[200px] p-8">
+    <div className="flex flex-col items-center justify-center h-full w-full p-8">
       {/* Logo Container */}
       <div className="mb-6">
         <img
           src="/logo.png"
           alt="CHIRPY Logo"
-          className="w-24 h-24 object-contain animate-pulse"
+          className="w-64 h-64 object-contain animate-pulse"
         />
       </div>
 
       {/* Three Dot Loader */}
       <div className="flex space-x-2">
-        <div className="w-3 h-3 bg-gray-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-        <div className="w-3 h-3 bg-gray-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-        <div className="w-3 h-3 bg-gray-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+        <div className="w-2 h-2 bg-gray-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+        <div className="w-2 h-2 bg-gray-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+        <div className="w-2 h-2 bg-gray-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
       </div>
 
       {/* Loading Text */}

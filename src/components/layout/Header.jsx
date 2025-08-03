@@ -237,7 +237,7 @@ const Header = () => {
 
             {/* Collections Dropdown */}
             <Select value={selectedCollection} onValueChange={handleCollectionChange}>
-              <SelectTrigger className="w-32 bg-white text-white border-none">
+              <SelectTrigger className="w-32 bg-white text-black border-none">
                 <SelectValue placeholder={loading ? "Loading..." : "Collections"} />
               </SelectTrigger>
               <SelectContent>

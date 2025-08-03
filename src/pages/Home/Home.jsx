@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Star, ShoppingCart, Heart, ChevronLeft, ChevronRight, Eye, Package, Grid3X3 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import collectionImage from "../../assets/collection-card.jpg";
 import ProductCard from '@/components/ui/ProductCard'
+import CollectionCard from '@/components/ui/CollectionCard'
 import useHome from './useHome'
 import useCartStore from '@/stores/useCartStore'
 import Loader from '@/components/ui/Loader'
@@ -77,60 +77,7 @@ const Home = () => {
     return <Loader />
   }
 
-  const CollectionCard = ({ collection }) => {
-    const collectionProducts = getCollectionProducts(collection.id)
-    const productCount = collectionProducts.length
 
-    return (
-      <div className="group relative bg-white border border-gray-200 hover:border-gray-300 transition-all duration-300 min-w-[280px]">
-        <Link to={`/collections/${collection.id}`} className="block">
-          {/* Image Container */}
-          <div className="relative h-[300px] overflow-hidden bg-gray-50">
-            <img
-              src={collection.image_url || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop'}
-              alt={collection.name}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 border-b-2 border-gray-200"
-            />
-
-            {/* Product Count Badge */}
-            <div className="absolute top-3 left-3">
-              <Badge className="bg-black text-white border-0 px-2 py-1 text-xs font-medium">
-                {productCount} {productCount === 1 ? 'Product' : 'Products'}
-              </Badge>
-            </div>
-
-            {/* Explore Button Overlay */}
-            <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-              <Button
-                size="sm"
-                className="bg-gray-800/90 text-white hover:bg-gray-800 border-0 px-4 py-2 text-sm font-medium"
-              >
-                Explore Collection
-              </Button>
-            </div>
-          </div>
-
-          {/* Content */}
-          <div className="p-4">
-            {/* Collection Name */}
-            <h3 className="font-semibold text-gray-900 text-base leading-tight mb-2">
-              {collection.name}
-            </h3>
-
-            {/* Contact Us Link */}
-            <div className="flex items-center">
-              <Link
-                to="/contact"
-                className="text-sm text-gray-500 underline hover:text-gray-700 transition-colors duration-200"
-              >
-                Contact Us
-              </Link>
-            </div>
-          </div>
-        </Link>
-      </div>
-    )
-  }
 
   const ProductSection = ({ title, products, viewAllLink, icon: Icon }) => (
     <section className="py-12">
@@ -166,27 +113,48 @@ const Home = () => {
           <div className="flex items-center space-x-3">
             <h2 className="text-2xl font-semibold text-gray-900">{title}</h2>
           </div>
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 w-8 p-0 bg-gray-100 border-gray-300 hover:bg-gray-200"
-            >
-              <ChevronLeft className="h-4 w-4 text-gray-600" />
+          <Link to={viewAllLink}>
+            <Button variant="outline" size="sm">
+              View All
+              <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
-            <Button
-              size="sm"
-              className="h-8 w-8 p-0 bg-black text-white hover:bg-gray-800 border-0"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
+          </Link>
         </div>
 
         <div className="relative">
           <div className="flex space-x-6 overflow-x-auto pb-4 scrollbar-hide">
+            {/* Explore Collections Card */}
+            <div className="group relative bg-white border border-gray-200 hover:border-gray-300 transition-all duration-300 min-w-[300px]">
+              <Link to="/collections" className="block">
+                {/* Image Container */}
+                <div className="relative h-[400px] w-[300px] overflow-hidden bg-gray-50">
+                  <img src={collectionImage}
+                    className='w-full h-full'
+                    alt="" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                  <div className="absolute inset-0 flex flex-col items-center justify-end text-white">
+                    <div className="text-center p-6">
+                      <h3 className="text-xl font-semibold mb-2">Explore All Collections</h3>
+                      <p className="text-sm text-gray-300 mb-4">
+                        Discover our complete range of handcrafted furniture and home decor
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="p-4">
+                  {/* Collection Name */}
+                  <h3 className="font-semibold text-gray-900 text-base leading-tight mb-2">
+                    Browse All Collections
+                  </h3>
+                </div>
+              </Link>
+            </div>
+
+            {/* Individual Collection Cards */}
             {collections.map((collection) => (
-              <CollectionCard key={collection.id} collection={collection} />
+              <CollectionCard key={collection.id} collection={collection} getCollectionProducts={getCollectionProducts} />
             ))}
           </div>
         </div>
@@ -210,8 +178,8 @@ const Home = () => {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 to-transparent"></div>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-center text-white max-w-2xl mx-auto px-4">
-                      <h1 className="text-2xl md:text-4xl font-medium mb-3">{banner.title}</h1>
+                    <div className="text-center text-white max-w-4xl mx-auto px-4">
+                      <h1 className="text-4xl md:text-6xl font-medium mb-3">{banner.title}</h1>
                       <p className="text-base md:text-lg mb-6 opacity-90">{banner.subtitle}</p>
                       <Link to={banner.link}>
                         <Button size="lg" className="text-sm px-6 py-3 bg-white text-gray-900 hover:bg-gray-100">
@@ -264,8 +232,19 @@ const Home = () => {
         />
       )}
 
+      {/* slogan section */}
+      <div className='relative w-full p-2 flex flex-row items-center justify-center'>
+        <h1 className='relative text-center md:text-left text-2xl md:text-3xl lg:text-4xl font-light font-poppins'>
+          <div className='absolute -top-5 left-2 md:-top-5 md:-left-10 lg:-top-5 lg:-left-10 text-5xl md:text-7xl font-playfair font-bold'>"</div>
+          Timeless Wood Products, Expertly Crafted for Your <br className='hidden md:block' /> Space with{" "}
+          <span className='text-emerald-800 font-playfair font-bold'>
+            Durability.
+          </span>
+        </h1>
+      </div >
+
       {/* Trending Products */}
-      <ProductSection
+      < ProductSection
         title="Trending Now"
         products={trendingProducts}
         viewAllLink="/products?sort=trending"
@@ -273,7 +252,7 @@ const Home = () => {
       />
 
       {/* New Arrivals */}
-      <ProductSection
+      < ProductSection
         title="New Arrivals"
         products={newArrivals}
         viewAllLink="/products?sort=newest"
@@ -281,23 +260,25 @@ const Home = () => {
       />
 
       {/* Individual Collection Sections */}
-      {!collectionsLoading && collections.map((collection) => {
-        const collectionProducts = getCollectionProducts(collection.id)
+      {
+        !collectionsLoading && collections.map((collection) => {
+          const collectionProducts = getCollectionProducts(collection.id)
 
-        // Only show collection if it has products
-        if (collectionProducts.length === 0) return null
+          // Only show collection if it has products
+          if (collectionProducts.length === 0) return null
 
-        return (
-          <ProductSection
-            key={collection.id}
-            title={collection.name}
-            products={collectionProducts}
-            viewAllLink={`/collections/${collection.id}`}
-            icon={Package}
-          />
-        )
-      })}
-    </div>
+          return (
+            <ProductSection
+              key={collection.id}
+              title={collection.name}
+              products={collectionProducts}
+              viewAllLink={`/collections/${collection.id}`}
+              icon={Package}
+            />
+          )
+        })
+      }
+    </div >
   )
 }
 
