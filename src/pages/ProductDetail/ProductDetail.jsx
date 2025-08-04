@@ -22,6 +22,8 @@ const ProductDetail = () => {
   const [product, setProduct] = useState(null)
   const [selectedImage, setSelectedImage] = useState(0)
   const [quantity, setQuantity] = useState(1)
+  const [showFullSpecs, setShowFullSpecs] = useState(false)
+  const [showFullTopSpecs, setShowFullTopSpecs] = useState(false)
 
   useEffect(() => {
     if (id) {
@@ -97,10 +99,12 @@ const ProductDetail = () => {
           return (
             <div key={index} className="mb-4">
               {block.title && <h4 className="font-semibold text-gray-900 mb-2">{block.title}</h4>}
-              <ul className="list-disc list-inside space-y-1 text-gray-600">
-                {block.content.map((item, i) => (
-                  <li key={i} className="text-sm">{item}</li>
-                ))}
+              <ul className="list-disc list-inside space-y-2 text-gray-600">
+                {block.content.map((item, i) => {
+                  // Remove numbered prefixes like "1.", "2.", "10.", etc. from the beginning of the item
+                  const cleanedItem = item.replace(/^\d+\.\s*/, '')
+                  return <li key={i} className="text-md">{cleanedItem}</li>
+                })}
               </ul>
             </div>
           )
@@ -108,14 +112,14 @@ const ProductDetail = () => {
           return (
             <div key={index} className="mb-4">
               {block.title && <h4 className="font-semibold text-gray-900 mb-2">{block.title}</h4>}
-              <p className="text-gray-600 text-sm leading-relaxed">{block.content}</p>
+              <p className="text-gray-600 text-md leading-relaxed">{block.content}</p>
             </div>
           )
         case 'keyvalue':
           return (
             <div key={index} className="mb-4">
               <h4 className="font-semibold text-gray-900 mb-2">{block.title}</h4>
-              <p className="text-gray-600 text-sm">{block.content}</p>
+              <p className="text-gray-600 text-md">{block.content}</p>
             </div>
           )
         case 'label':
@@ -161,20 +165,20 @@ const ProductDetail = () => {
       <div className="bg-gray-50 border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center space-x-2 text-sm text-gray-600">
-            <Link to="/" className="hover:text-blue-600">Home</Link>
+            <Link to="/" className="hover:text-emerald-600">Home</Link>
             <span>/</span>
-            <Link to="/products" className="hover:text-blue-600">Products</Link>
+            <Link to="/products" className="hover:text-emerald-600">Products</Link>
             <span>/</span>
             <span className="text-gray-900">{product.name}</span>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
           {/* Product Images */}
-          <div className="sticky top-4">
-            <div className="space-y-4">
+          <div className="block lg:sticky top-4 pt-2 md:pt-4">
+            <div className="space-y-4 px-4">
               <div className="aspect-square overflow-hidden rounded-lg bg-gray-100">
                 <img
                   src={images[selectedImage]}
@@ -188,7 +192,7 @@ const ProductDetail = () => {
                     <button
                       key={index}
                       onClick={() => setSelectedImage(index)}
-                      className={`w-20 h-20 rounded-lg overflow-hidden border-2 ${selectedImage === index ? 'border-blue-600' : 'border-gray-200'
+                      className={`w-20 h-20 rounded-lg overflow-hidden border-2 ${selectedImage === index ? 'border-emerald-600' : 'border-gray-200'
                         }`}
                     >
                       <img
@@ -204,8 +208,8 @@ const ProductDetail = () => {
           </div>
 
           {/* Product Info */}
-          <div className="space-y-6">
-            <div>
+          <div className="space-y-6 pt-4 md:pt-6">
+            <div className="py-4 px-4">
               <h1 className="text-3xl font-bold text-gray-900 mb-4">{product.name}</h1>
               <div className="flex items-center space-x-4 mb-4">
                 <div className="flex items-center">
@@ -242,11 +246,53 @@ const ProductDetail = () => {
             {product.product_overview && (
               <div className="">
                 <h3 className="font-semibold text-gray-900 mb-3">Product Specifications</h3>
-                <div className="space-y-3">
-                  {renderProductOverview()}
+                <div className="relative">
+                  <div
+                    className={`space-y-3 transition-all duration-300 ${showFullTopSpecs ? 'max-h-none' : 'max-h-[200px] overflow-hidden'
+                      }`}
+                  >
+                    {renderProductOverview()}
+                  </div>
+                  {!showFullTopSpecs && (
+                    <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+                  )}
+                  <div className="mt-4 text-center">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowFullTopSpecs(!showFullTopSpecs)}
+                      className="text-emerald-600 hover:text-emerald-700"
+                    >
+                      {showFullTopSpecs ? 'Show Less' : 'Show More'}
+                    </Button>
+                  </div>
                 </div>
               </div>
             )}
+
+            {/* Features */}
+            <div className="flex flex-col gap-3">
+              <div className="flex items-start flex-between space-x-4">
+                <Truck className="h-5 w-5 text-gray-500" />
+                <span className="text-sm text-gray-600">
+                  Ready to ship by late-March. Mattress not included. Made in limited
+                  runs.
+                </span>
+              </div>
+              <div className="flex items-start flex-between space-x-4">
+                <Shield className="h-5 w-5 text-gray-500" />
+                <span className="text-sm text-gray-600">
+                  Financing available with Affirm, PayPal, or Afterpay.
+                </span>
+              </div>
+              <div className="flex items-start flex-between space-x-4">
+                <RotateCcw className="h-5 w-5 text-gray-500" />
+                <span className="text-sm text-gray-600">
+                  Eligible for Premium Delivery. Scheduled delivery to room of choice,
+                  and assembly & package removal.
+                </span>
+              </div>
+            </div>
 
             {/* Quantity and Add to Cart */}
             <div className="space-y-4">
@@ -302,154 +348,148 @@ const ProductDetail = () => {
               </div>
             </div>
 
-            {/* Features */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-6 border-t border-gray-200">
-              <div className="flex items-center space-x-2">
-                <Truck className="h-5 w-5 text-green-600" />
-                <span className="text-sm text-gray-600">Free Shipping</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Shield className="h-5 w-5 text-blue-600" />
-                <span className="text-sm text-gray-600">Secure Payment</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RotateCcw className="h-5 w-5 text-orange-600" />
-                <span className="text-sm text-gray-600">Easy Returns</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Product Details Accordion */}
-        <div className="mt-16">
-          <Accordion type="single" collapsible className="w-full space-y-4">
-            {/* Overview */}
-            <AccordionItem value="overview" className="border border-gray-200 rounded-lg">
-              <AccordionTrigger className="px-6 py-4 text-left hover:bg-gray-50 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <span className="font-semibold text-gray-900">Product Overview</span>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="px-6 pb-6">
-                {product.overview ? (
-                  <div className="space-y-4">
-                    {renderBlocks(product.overview.blocks)}
-                  </div>
-                ) : (
-                  <p className="text-gray-600">No overview available for this product.</p>
-                )}
-              </AccordionContent>
-            </AccordionItem>
-            {/* Specifications */}
-            <AccordionItem value="specifications" className="border border-gray-200 rounded-lg">
-              <AccordionTrigger className="px-6 py-4 text-left hover:bg-gray-50 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span className="font-semibold text-gray-900">Product Specifications</span>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="px-6 pb-6">
-                <div className="space-y-4">
-                  {renderProductOverview()}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-            {/* Care & Instructions */}
-            <AccordionItem value="care" className="border border-gray-200 rounded-lg">
-              <AccordionTrigger className="px-6 py-4 text-left hover:bg-gray-50 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                  <span className="font-semibold text-gray-900">Care & Maintenance Instructions</span>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="px-6 pb-6">
-                {product.care_and_instructions ? (
-                  <div className="space-y-4">
-                    {renderBlocks(product.care_and_instructions.blocks)}
-                  </div>
-                ) : (
-                  <p className="text-gray-600">No care instructions available for this product.</p>
-                )}
-              </AccordionContent>
-            </AccordionItem>
-            {/* Delivery & Installation */}
-            <AccordionItem value="delivery" className="border border-gray-200 rounded-lg">
-              <AccordionTrigger className="px-6 py-4 text-left hover:bg-gray-50 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                  <span className="font-semibold text-gray-900">Delivery & Installation</span>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="px-6 pb-6">
-                {product.delivery_installation ? (
-                  <div className="space-y-4">
-                    {renderBlocks(product.delivery_installation.blocks)}
-                  </div>
-                ) : (
-                  <p className="text-gray-600">No delivery information available for this product.</p>
-                )}
-              </AccordionContent>
-            </AccordionItem>
-            {/* FAQ */}
-            <AccordionItem value="faq" className="border border-gray-200 rounded-lg">
-              <AccordionTrigger className="px-6 py-4 text-left hover:bg-gray-50 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                  <span className="font-semibold text-gray-900">Frequently Asked Questions</span>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="px-6 pb-6">
-                {product.faq ? (
-                  <div className="space-y-4">
-                    {product.faq.blocks.map((faq, index) => (
-                      <div key={index} className="border border-gray-100 rounded-lg p-4">
-                        <h4 className="font-semibold text-gray-900 mb-2">{faq.title}</h4>
-                        <p className="text-gray-600 text-sm leading-relaxed">{faq.content}</p>
+            {/* Product Details Accordion */}
+            <div className="mt-2">
+              <Accordion type="single" collapsible className="w-full space-y-4">
+                {/* Overview */}
+                <AccordionItem value="overview" className="border border-gray-200 rounded-lg">
+                  <AccordionTrigger className="px-6 py-4 text-left hover:bg-gray-50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <span className="font-semibold text-gray-900">Product Overview</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-6 pb-6">
+                    {product.overview ? (
+                      <div className="space-y-4">
+                        {renderBlocks(product.overview.blocks)}
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-gray-600">No FAQ available for this product.</p>
+                    ) : (
+                      <p className="text-gray-600">No overview available for this product.</p>
+                    )}
+                  </AccordionContent>
+                </AccordionItem>
+                {/* Specifications */}
+                <AccordionItem value="specifications" className="border border-gray-200 rounded-lg">
+                  <AccordionTrigger className="px-6 py-4 text-left hover:bg-gray-50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <span className="font-semibold text-gray-900">Product Specifications</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-6 pb-6">
+                    <div className="relative">
+                      <div
+                        className={`space-y-4 transition-all duration-300 ${showFullSpecs ? 'max-h-none' : 'max-h-[200px] overflow-hidden'
+                          }`}
+                      >
+                        {renderProductOverview()}
+                      </div>
+                      {!showFullSpecs && (
+                        <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+                      )}
+                      <div className="mt-4 text-center">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowFullSpecs(!showFullSpecs)}
+                          className="text-emerald-600 hover:text-emerald-700"
+                        >
+                          {showFullSpecs ? 'Show Less' : 'Show More'}
+                        </Button>
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+                {/* Care & Instructions */}
+                <AccordionItem value="care" className="border border-gray-200 rounded-lg">
+                  <AccordionTrigger className="px-6 py-4 text-left hover:bg-gray-50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <span className="font-semibold text-gray-900">Care & Maintenance Instructions</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-6 pb-6">
+                    {product.care_and_instructions ? (
+                      <div className="space-y-4">
+                        {renderBlocks(product.care_and_instructions.blocks)}
+                      </div>
+                    ) : (
+                      <p className="text-gray-600">No care instructions available for this product.</p>
+                    )}
+                  </AccordionContent>
+                </AccordionItem>
+                {/* Delivery & Installation */}
+                <AccordionItem value="delivery" className="border border-gray-200 rounded-lg">
+                  <AccordionTrigger className="px-6 py-4 text-left hover:bg-gray-50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <span className="font-semibold text-gray-900">Delivery & Installation</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-6 pb-6">
+                    {product.delivery_installation ? (
+                      <div className="space-y-4">
+                        {renderBlocks(product.delivery_installation.blocks)}
+                      </div>
+                    ) : (
+                      <p className="text-gray-600">No delivery information available for this product.</p>
+                    )}
+                  </AccordionContent>
+                </AccordionItem>
+                {/* FAQ */}
+                <AccordionItem value="faq" className="border border-gray-200 rounded-lg">
+                  <AccordionTrigger className="px-6 py-4 text-left hover:bg-gray-50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <span className="font-semibold text-gray-900">Frequently Asked Questions</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-6 pb-6">
+                    {product.faq ? (
+                      <div className="space-y-4">
+                        {product.faq.blocks.map((faq, index) => (
+                          <div key={index} className="border border-gray-100 rounded-lg p-4">
+                            <h4 className="font-semibold text-gray-900 mb-2">{faq.title}</h4>
+                            <p className="text-gray-600 text-sm leading-relaxed">{faq.content}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-600">No FAQ available for this product.</p>
+                    )}
+                  </AccordionContent>
+                </AccordionItem>
+                {/* Terms & Conditions */}
+                {product.terms_and_conditions && (
+                  <AccordionItem value="terms" className="border border-gray-200 rounded-lg">
+                    <AccordionTrigger className="px-6 py-4 text-left hover:bg-gray-50 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <span className="font-semibold text-gray-900">Terms & Conditions</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-6 pb-6">
+                      <div className="space-y-4">
+                        {renderBlocks(product.terms_and_conditions.blocks)}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
                 )}
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+                {/* Disclaimer */}
+                {product.disclaimer && (
+                  <AccordionItem value="disclaimer" className="border border-gray-200 rounded-lg">
+                    <AccordionTrigger className="px-6 py-4 text-left hover:bg-gray-50 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <span className="font-semibold text-gray-900">Important Disclaimer</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-6 pb-6">
+                      <div className="space-y-4">
+                        {renderBlocks(product.disclaimer.blocks)}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
+              </Accordion>
+            </div>
+
+          </div>
         </div>
-
-        {/* Terms & Conditions */}
-        {product.terms_and_conditions && (
-          <div className="mt-16">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Info className="h-5 w-5 text-blue-600" />
-                  <span>Terms & Conditions</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {renderBlocks(product.terms_and_conditions.blocks)}
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* Disclaimer */}
-        {product.disclaimer && (
-          <div className="mt-8">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <AlertCircle className="h-5 w-5 text-orange-600" />
-                  <span>Important Disclaimer</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {renderBlocks(product.disclaimer.blocks)}
-              </CardContent>
-            </Card>
-          </div>
-        )}
 
         {/* Related Products */}
         {relatedProducts.length > 0 && (
