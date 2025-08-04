@@ -66,9 +66,11 @@ const useAuthStore = create(
               throw userError
             }
 
+            // Don't automatically authenticate - wait for email verification
+            // The user will be authenticated after email verification
             set({
-              user: { ...authData.user, ...userData },
-              isAuthenticated: true,
+              user: null,
+              isAuthenticated: false,
               isLoading: false
             })
           }

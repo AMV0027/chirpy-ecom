@@ -6,11 +6,10 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Mail, Lock, Eye, EyeOff, User, Phone, ArrowRight, CheckCircle, XCircle } from 'lucide-react'
-import useAuthStore from '@/stores/useAuthStore'
 import { toast } from 'sonner'
 import loginBg from '@/assets/login-bg.jpg'
 import logo from '../../assets/logo.png'
-import { supabase } from '@/db/supabase'
+import { useLogin } from './useLogin'
 
 const Login = () => {
   const [isLoginMode, setIsLoginMode] = useState(true)
@@ -24,10 +23,20 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [emailExists, setEmailExists] = useState(null)
-  const [isCheckingEmail, setIsCheckingEmail] = useState(false)
 
-  const { signIn, signUp, error, clearError, isAuthenticated } = useAuthStore()
+  const {
+    isCheckingEmail,
+    emailExists,
+    showEmailExistsMessage,
+    checkEmailExists,
+    handleLogin,
+    handleRegistration,
+    clearEmailExistsMessage,
+    error,
+    clearError,
+    isAuthenticated
+  } = useLogin()
+
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -41,30 +50,15 @@ const Login = () => {
 
   // Check if email exists when user types in registration mode
   useEffect(() => {
-    const checkEmailExists = async () => {
-      if (!isLoginMode && formData.email && formData.email.includes('@')) {
-        setIsCheckingEmail(true)
-        try {
-          const { data, error } = await supabase
-            .from('users')
-            .select('email')
-            .eq('email', formData.email)
-            .single()
-
-          setEmailExists(!!data)
-        } catch (error) {
-          setEmailExists(false)
-        } finally {
-          setIsCheckingEmail(false)
-        }
-      } else {
-        setEmailExists(null)
-      }
+    if (!isLoginMode && formData.email && formData.email.includes('@')) {
+      const timeoutId = setTimeout(() => {
+        checkEmailExists(formData.email)
+      }, 500)
+      return () => clearTimeout(timeoutId)
+    } else {
+      checkEmailExists('')
     }
-
-    const timeoutId = setTimeout(checkEmailExists, 500)
-    return () => clearTimeout(timeoutId)
-  }, [formData.email, isLoginMode])
+  }, [formData.email, isLoginMode, checkEmailExists])
 
   const handleChange = (e) => {
     setFormData({
@@ -75,81 +69,29 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setIsLoading(true)
 
-    if (isLoginMode) {
-      // Login mode
-      if (!formData.email || !formData.password) {
-        toast.error('Please fill in all fields')
-        return
-      }
-
-      setIsLoading(true)
-      clearError()
-
-      try {
-        await signIn(formData.email, formData.password)
-        toast.success('Login successful!')
-
-        // Redirect to the page they were trying to access, or home
-        const from = location.state?.from?.pathname || '/'
-        navigate(from, { replace: true })
-      } catch (error) {
-        toast.error(error.message || 'Login failed')
-      } finally {
-        setIsLoading(false)
-      }
-    } else {
-      // Register mode
-      if (!formData.fullName || !formData.email || !formData.phone || !formData.password || !formData.confirmPassword) {
-        toast.error('Please fill in all fields')
-        return
-      }
-
-      if (formData.password !== formData.confirmPassword) {
-        toast.error('Passwords do not match')
-        return
-      }
-
-      if (formData.password.length < 6) {
-        toast.error('Password must be at least 6 characters long')
-        return
-      }
-
-      // Check if email already exists
-      if (emailExists === true) {
-        toast.error('An account with this email already exists. Please sign in instead.')
-        return
-      }
-
-      setIsLoading(true)
-      clearError()
-
-      try {
-        await signUp(formData.email, formData.password, formData.fullName, formData.phone)
-        toast.success('Registration successful! Please check your email to verify your account.')
-
-        // Redirect to the page they were trying to access, or home
-        const from = location.state?.from?.pathname || '/'
-        navigate(from, { replace: true })
-      } catch (error) {
-        // Handle specific error cases
-        if (error.message.includes('already exists')) {
-          toast.error(error.message)
-          // Switch to login mode since the user already has an account
-          setIsLoginMode(true)
-          setFormData({
-            fullName: '',
-            email: formData.email, // Keep the email for convenience
-            phone: '',
-            password: '',
-            confirmPassword: ''
-          })
-        } else {
-          toast.error(error.message || 'Registration failed')
+    try {
+      if (isLoginMode) {
+        // Login mode
+        const success = await handleLogin(formData.email, formData.password)
+        if (success) {
+          // Login successful, redirect handled by handleLogin
+          return
         }
-      } finally {
-        setIsLoading(false)
+      } else {
+        // Register mode
+        const success = await handleRegistration(formData)
+        if (success) {
+          // Registration successful, show message about email verification
+          // Don't redirect - user needs to verify email first
+          return
+        }
       }
+    } catch (error) {
+      toast.error(error.message || 'An error occurred')
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -162,7 +104,7 @@ const Login = () => {
       password: '',
       confirmPassword: ''
     })
-    setEmailExists(null)
+    clearEmailExistsMessage()
     clearError()
   }
 
@@ -193,6 +135,14 @@ const Login = () => {
               {error && (
                 <Alert variant="destructive" className="border-red-200 bg-red-50">
                   <AlertDescription className="text-red-800 text-sm">{error}</AlertDescription>
+                </Alert>
+              )}
+
+              {showEmailExistsMessage && (
+                <Alert variant="destructive" className="border-red-200 bg-red-50">
+                  <AlertDescription className="text-red-800 text-sm">
+                    An account with this email already exists. Please sign in instead.
+                  </AlertDescription>
                 </Alert>
               )}
 
