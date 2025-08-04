@@ -8,8 +8,8 @@ export const formatWhatsAppMessage = (cartItems, user, orderId) => {
 
   const message = `🛒 *New Order Request*
 
-*Customer:* ${user?.full_name || 'Guest'}
-*Phone:* ${user?.phone || 'Not provided'}
+*Customer:* ${user?.name || 'Guest'}
+*Phone:* ${user?.phone || user?.mobile || 'Not provided'}
 *Email:* ${user?.email || 'Not provided'}
 
 *Order Items:*

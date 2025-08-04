@@ -16,6 +16,7 @@ import Wishlist from './pages/Wishlist/Wishlist'
 import Profile from './pages/Profile/Profile'
 import MyOrders from './pages/MyOrders/MyOrders'
 import Checkout from './pages/Checkout/Checkout'
+import Contact from './pages/Contact/Contact'
 import useAuthStore from './stores/useAuthStore'
 
 function App() {
@@ -117,6 +118,13 @@ function App() {
             <ProtectedRoute>
               <Layout>
                 <Wishlist />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/contact" element={
+            <ProtectedRoute>
+              <Layout>
+                <Contact />
               </Layout>
             </ProtectedRoute>
           } />

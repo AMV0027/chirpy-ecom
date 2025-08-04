@@ -147,16 +147,16 @@ const Header = () => {
               {/* <img src="/logo.png" alt="Logo" className="h-12" /> */}
               <span className="text-xl font-bold font-poppins">CHIRPY</span>
             </Link>
-            <nav className="hidden md:flex items-center space-x-6">
+            <nav className="hidden md:flex items-end space-x-6">
               <Link
                 to="/products"
-                className="text-white hover:text-gray-300 transition-colors font-medium"
+                className="text-white hover:text-gray-300 transition-colors font-medium text-sm"
               >
                 Products
               </Link>
               <Link
                 to="/collections"
-                className="text-white hover:text-gray-300 transition-colors font-medium"
+                className="text-white hover:text-gray-300 transition-colors font-medium text-sm"
               >
                 Collections
               </Link>
@@ -253,7 +253,7 @@ const Header = () => {
             </div>
 
             {/* Collections Dropdown */}
-            <Select value={selectedCollection} onValueChange={handleCollectionChange}>
+            {/* <Select value={selectedCollection} onValueChange={handleCollectionChange}>
               <SelectTrigger className="w-32 bg-white text-black border-none">
                 <SelectValue placeholder={loading ? "Loading..." : "Collections"} />
               </SelectTrigger>
@@ -264,7 +264,7 @@ const Header = () => {
                   </SelectItem>
                 ))}
               </SelectContent>
-            </Select>
+            </Select> */}
           </div>
 
           {/* Right side actions */}
