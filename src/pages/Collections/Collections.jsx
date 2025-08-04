@@ -12,6 +12,7 @@ import { supabase } from '@/db/supabase'
 import Loader from '@/components/ui/Loader'
 import { Navigate } from 'react-router-dom'
 import ProductCard from '@/components/ui/ProductCard'
+import Breadcrumb from '@/components/ui/Breadcrumb'
 
 const Collections = () => {
   const { id } = useParams()
@@ -116,40 +117,38 @@ const Collections = () => {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* Breadcrumbs */}
+      <Breadcrumb
+        items={[
+          { label: 'Collections', link: '/collections' },
+          { label: categoryInfo.name }
+        ]}
+      />
+
       {/* Header */}
-      <div className="bg-gray-50 border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-
-          {/* Title and Description */}
-          <div className="flex flex-row gap-2 w-full">
-            <Link to="/">
-              <Button variant="ghost" size="sm" className="hover:bg-gray-100 border border-gray-200 shadow-xs">
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-            </Link>
-            <div className='flex flex-col'>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">{categoryInfo.name}</h1>
-            </div>
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col md:flex-row justify-start md:justify-between items-start md:items-center">
+          {/* Title */}
+          <div className="mb-4">
+            <h1 className="text-3xl font-bold text-gray-900">{categoryInfo.name}</h1>
+            <p className="text-gray-600">Browse products in this collection</p>
           </div>
-          {/* <p className="text-gray-600 text-sm mb-1">{categoryInfo.description}</p> */}
 
-          {/* Header Content */}
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-
-            {/* Search and Sort Controls */}
-            <div className="flex flex-row items-center gap-2 w-full">
-              <div className="relative flex-1">
+          {/* Search and Sort Controls */}
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div className="flex flex-row items-center gap-3 w-full lg:w-auto">
+              <div className="relative flex-1 lg:w-80">
                 <Input
                   type="text"
-                  placeholder={`Search from the ${filteredProducts.length} products in ${categoryInfo.name}`}
+                  placeholder={`Search ${filteredProducts.length} products in ${categoryInfo.name}`}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-8 text-sm"
+                  className="w-full pl-10"
                 />
-                <Filter className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               </div>
               <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="min-w-[100px] text-xs">
+                <SelectTrigger className="min-w-[120px]">
                   <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent>

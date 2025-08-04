@@ -8,8 +8,10 @@ import Home from './pages/Home/Home'
 import Products from './pages/Products/Products'
 import ProductDetail from './pages/ProductDetail/ProductDetail'
 import Collections from './pages/Collections/Collections'
+import CollectionsOverview from './pages/Collections/CollectionsOverview'
 import Cart from './pages/Cart/Cart'
 import Login from './pages/Login/Login'
+import Wishlist from './pages/Wishlist/Wishlist'
 
 import Profile from './pages/Profile/Profile'
 import MyOrders from './pages/MyOrders/MyOrders'
@@ -69,6 +71,13 @@ function App() {
               </Layout>
             </ProtectedRoute>
           } />
+          <Route path="/collections" element={
+            <ProtectedRoute>
+              <Layout>
+                <CollectionsOverview />
+              </Layout>
+            </ProtectedRoute>
+          } />
           <Route path="/collections/:id" element={
             <ProtectedRoute>
               <Layout>
@@ -101,6 +110,13 @@ function App() {
             <ProtectedRoute>
               <Layout>
                 <Checkout />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/wishlist" element={
+            <ProtectedRoute>
+              <Layout>
+                <Wishlist />
               </Layout>
             </ProtectedRoute>
           } />

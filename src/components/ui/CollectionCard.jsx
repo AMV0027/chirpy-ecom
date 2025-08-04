@@ -13,7 +13,7 @@ const CollectionCard = ({ collection, getCollectionProducts }) => {
         {/* Image Container */}
         <div className="relative h-[400px] w-[300px] overflow-hidden bg-gray-50">
           <img
-            src={collection.image_url || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop'}
+            src={collection.image_url || 'https://placehold.co/600x600?text=Loading'}
             alt={collection.name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 border-b-2 border-gray-200"
           />

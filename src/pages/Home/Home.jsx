@@ -165,7 +165,6 @@ const Home = () => {
     const scrollContainerRef = useRef(null)
     const [canScrollLeft, setCanScrollLeft] = useState(false)
     const [canScrollRight, setCanScrollRight] = useState(true)
-
     const checkScrollButtons = () => {
       if (scrollContainerRef.current) {
         const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current
@@ -173,13 +172,11 @@ const Home = () => {
         setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1)
       }
     }
-
     const scrollLeft = () => {
       if (scrollContainerRef.current) {
         scrollContainerRef.current.scrollBy({ left: -300, behavior: 'smooth' })
       }
     }
-
     const scrollRight = () => {
       if (scrollContainerRef.current) {
         scrollContainerRef.current.scrollBy({ left: 300, behavior: 'smooth' })

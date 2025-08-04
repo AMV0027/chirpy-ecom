@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ShoppingCart, Search, User, Menu, X, Heart, Package, Phone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -9,12 +9,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import useCartStore from '@/stores/useCartStore'
 import useAuthStore from '@/stores/useAuthStore'
+import useWishlistStore from '@/stores/useWishlistStore'
 import { supabase } from '@/db/supabase'
 import Loader from '@/components/ui/Loader'
 
 const Header = () => {
   const { cartItems } = useCartStore()
   const { user, isAuthenticated, signOut } = useAuthStore()
+  const { getWishlistCount } = useWishlistStore()
   const navigate = useNavigate()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -25,7 +27,8 @@ const Header = () => {
   const [showSearchDropdown, setShowSearchDropdown] = useState(false)
   const [searchLoading, setSearchLoading] = useState(false)
 
-  const cartItemCount = cartItems.length
+  const cartItemCount = useMemo(() => cartItems.length, [cartItems])
+  const wishlistCount = useMemo(() => getWishlistCount(), [getWishlistCount])
 
   // Fetch collections from Supabase
   useEffect(() => {
@@ -107,43 +110,57 @@ const Header = () => {
   }, [searchQuery])
 
   // Handle collection selection
-  const handleCollectionChange = (collectionId) => {
+  const handleCollectionChange = useCallback((collectionId) => {
     setSelectedCollection(collectionId)
     if (collectionId) {
       navigate(`/collections/${collectionId}`)
     }
-  }
+  }, [navigate])
 
-  const handleSearchResultClick = (result) => {
+  const handleSearchResultClick = useCallback((result) => {
     setSearchQuery('')
     setShowSearchDropdown(false)
     setSearchResults([])
-  }
+  }, [])
 
-  const toggleMobileMenu = () => {
+  const toggleMobileMenu = useCallback(() => {
     setIsMobileMenuOpen(!isMobileMenuOpen)
-  }
+  }, [isMobileMenuOpen])
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     await signOut()
     setIsMobileMenuOpen(false)
-  }
+  }, [signOut])
 
-  const getInitials = (name) => {
+  const getInitials = useCallback((name) => {
     if (!name) return 'U'
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-  }
+  }, [])
 
   return (
     <header className="bg-black text-white sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-[10vh]">
           {/* Logo and Company Name */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-6">
             <Link to="/" className="flex items-center space-x-2">
               {/* <img src="/logo.png" alt="Logo" className="h-12" /> */}
               <span className="text-xl font-bold font-poppins">CHIRPY</span>
             </Link>
+            <nav className="hidden md:flex items-center space-x-6">
+              <Link
+                to="/products"
+                className="text-white hover:text-gray-300 transition-colors font-medium"
+              >
+                Products
+              </Link>
+              <Link
+                to="/collections"
+                className="text-white hover:text-gray-300 transition-colors font-medium"
+              >
+                Collections
+              </Link>
+            </nav>
           </div>
 
           {/* Search and Collections - Center */}
@@ -256,9 +273,11 @@ const Header = () => {
             <Link to="/wishlist" className="relative">
               <Button variant="ghost" size="icon" className="relative">
                 <Heart className="h-5 w-5" />
-                <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs bg-red-500">
-                  0
-                </Badge>
+                {wishlistCount > 0 && (
+                  <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs bg-red-500">
+                    {wishlistCount}
+                  </Badge>
+                )}
               </Button>
             </Link>
 
@@ -431,6 +450,13 @@ const Header = () => {
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 All Products
+              </Link>
+              <Link
+                to="/collections"
+                className="block text-gray-700 hover:text-blue-600 transition-colors font-medium"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Collections
               </Link>
               {collections.map((collection) => (
                 <Link

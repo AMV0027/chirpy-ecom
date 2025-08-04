@@ -1,25 +1,27 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Star, ShoppingCart, Heart, Eye, Truck, Shield, RotateCcw, Share2, Minus, Plus, CheckCircle, Info, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Star, ShoppingCart, Heart, Eye, Truck, Shield, RotateCcw, Share2, Minus, Plus, CheckCircle, Info, AlertCircle, Phone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { Separator } from '@/components/ui/separator'
 import useProductStore from '@/stores/useProductStore'
 import useCartStore from '@/stores/useCartStore'
+import useWishlistStore from '@/stores/useWishlistStore'
+import useAuthStore from '@/stores/useAuthStore'
 import Loader from '@/components/ui/Loader'
+import { sendToWhatsApp, formatWhatsAppMessage } from '@/lib/whatsapp'
 
 const ProductDetail = () => {
   const { id } = useParams()
   const { fetchProduct, products, isLoading } = useProductStore()
   const { addToCart, cartItems } = useCartStore()
-
+  const { addToWishlist, removeFromWishlist, isInWishlist, wishlistItems } = useWishlistStore()
+  const { user, isAuthenticated } = useAuthStore()
   const [product, setProduct] = useState(null)
   const [selectedImage, setSelectedImage] = useState(0)
   const [quantity, setQuantity] = useState(1)
-  const [activeTab, setActiveTab] = useState('overview')
 
   useEffect(() => {
     if (id) {
@@ -33,6 +35,25 @@ const ProductDetail = () => {
     }
   }
 
+  const handleBuyNow = () => {
+    if (product) {
+      // Create a single item order for WhatsApp
+      const orderData = {
+        cartItems: [{
+          id: product.id,
+          name: product.name,
+          price: getDiscountedPrice(),
+          quantity: quantity
+        }],
+        user: null, // Will be filled by user data if available
+        orderId: 'DIRECT-' + Date.now(),
+        totalAmount: getDiscountedPrice() * quantity
+      }
+      const message = formatWhatsAppMessage(orderData.cartItems, orderData.user, orderData.orderId)
+      sendToWhatsApp(message)
+    }
+  }
+
   const handleQuantityChange = (type) => {
     if (type === 'increase') {
       setQuantity(prev => prev + 1)
@@ -42,6 +63,22 @@ const ProductDetail = () => {
   }
 
   const isInCart = product && cartItems.some(item => item.id === product.id)
+  const isInWishlistState = product && isInWishlist(product.id)
+
+  const handleWishlistToggle = async () => {
+    if (!isAuthenticated) {
+      // You could show a login prompt here
+      alert('Please login to add items to wishlist')
+      return
+    }
+    if (product) {
+      if (isInWishlistState) {
+        await removeFromWishlist(user.id, product.id)
+      } else {
+        await addToWishlist(user.id, product)
+      }
+    }
+  }
 
   // Calculate discounted price
   const getDiscountedPrice = () => {
@@ -54,7 +91,6 @@ const ProductDetail = () => {
   // Render JSON blocks
   const renderBlocks = (blocks) => {
     if (!blocks || !Array.isArray(blocks)) return null
-
     return blocks.map((block, index) => {
       switch (block.type) {
         case 'list':
@@ -97,9 +133,8 @@ const ProductDetail = () => {
   // Render product overview specifications
   const renderProductOverview = () => {
     if (!product?.product_overview?.blocks) return null
-
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4">
         {product.product_overview.blocks.map((block, index) => (
           <div key={index} className="flex justify-between py-3 border-b border-gray-100">
             <span className="font-medium text-gray-700">{block.title}</span>
@@ -116,7 +151,6 @@ const ProductDetail = () => {
 
   const images = product.images || ['https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&h=600&fit=crop']
   const discountedPrice = getDiscountedPrice()
-
   const relatedProducts = products
     .filter(p => p.collection_id === product.collection_id && p.id !== product.id)
     .slice(0, 4)
@@ -137,42 +171,42 @@ const ProductDetail = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
           {/* Product Images */}
-          <div className="space-y-4">
-            <div className="aspect-square overflow-hidden rounded-lg bg-gray-100">
-              <img
-                src={images[selectedImage]}
-                alt={product.name}
-                className="w-full h-full object-cover"
-              />
-            </div>
-
-            {images.length > 1 && (
-              <div className="flex space-x-2">
-                {images.map((image, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setSelectedImage(index)}
-                    className={`w-20 h-20 rounded-lg overflow-hidden border-2 ${selectedImage === index ? 'border-blue-600' : 'border-gray-200'
-                      }`}
-                  >
-                    <img
-                      src={image}
-                      alt={`${product.name} ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </button>
-                ))}
+          <div className="sticky top-4">
+            <div className="space-y-4">
+              <div className="aspect-square overflow-hidden rounded-lg bg-gray-100">
+                <img
+                  src={images[selectedImage]}
+                  alt={product.name}
+                  className="w-full h-full object-cover"
+                />
               </div>
-            )}
+              {images.length > 1 && (
+                <div className="flex space-x-2">
+                  {images.map((image, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setSelectedImage(index)}
+                      className={`w-20 h-20 rounded-lg overflow-hidden border-2 ${selectedImage === index ? 'border-blue-600' : 'border-gray-200'
+                        }`}
+                    >
+                      <img
+                        src={image}
+                        alt={`${product.name} ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Product Info */}
           <div className="space-y-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-4">{product.name}</h1>
-
               <div className="flex items-center space-x-4 mb-4">
                 <div className="flex items-center">
                   {[...Array(5)].map((_, i) => (
@@ -187,7 +221,6 @@ const ProductDetail = () => {
                   <Share2 className="h-4 w-4" />
                 </Button>
               </div>
-
               <div className="flex items-center space-x-4 mb-6">
                 <div className="text-3xl font-bold text-gray-900">
                   ₹{discountedPrice.toLocaleString()}
@@ -205,41 +238,20 @@ const ProductDetail = () => {
               </div>
             </div>
 
-            {/* Product Overview */}
-            {product.overview && (
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h3 className="font-semibold text-gray-900 mb-3">Product Overview</h3>
-                {renderBlocks(product.overview.blocks)}
+            {/* Product Specifications */}
+            {product.product_overview && (
+              <div className="">
+                <h3 className="font-semibold text-gray-900 mb-3">Product Specifications</h3>
+                <div className="space-y-3">
+                  {renderProductOverview()}
+                </div>
               </div>
             )}
 
             {/* Quantity and Add to Cart */}
             <div className="space-y-4">
-              <div className="flex items-center space-x-4">
-                <span className="text-sm font-medium text-gray-700">Quantity:</span>
-                <div className="flex items-center border border-gray-300 rounded-md">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleQuantityChange('decrease')}
-                    disabled={quantity <= 1}
-                    className="h-8 w-8 p-0"
-                  >
-                    <Minus className="h-4 w-4" />
-                  </Button>
-                  <span className="px-4 py-1 text-sm font-medium">{quantity}</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleQuantityChange('increase')}
-                    className="h-8 w-8 p-0"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-
-              <div className="flex space-x-4">
+              {/* First Row: Quantity and Add to Cart */}
+              <div className="flex items-center space-x-2">
                 <Button
                   size="lg"
                   onClick={handleAddToCart}
@@ -249,8 +261,43 @@ const ProductDetail = () => {
                   <ShoppingCart className="h-5 w-5 mr-2" />
                   {isInCart ? 'Added to Cart' : 'Add to Cart'}
                 </Button>
-                <Button variant="outline" size="lg">
-                  <Heart className="h-5 w-5" />
+                <div className="flex items-center border border-gray-300 rounded-md">
+                  <Button
+                    variant="ghost"
+                    size="lg"
+                    onClick={() => handleQuantityChange('decrease')}
+                    disabled={quantity <= 1}
+                  >
+                    <Minus className="h-4 w-4" />
+                  </Button>
+                  <span className="px-4 py-1 text-sm font-medium">{quantity}</span>
+                  <Button
+                    variant="ghost"
+                    size="lg"
+                    onClick={() => handleQuantityChange('increase')}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={handleWishlistToggle}
+                  className={isInWishlistState ? 'text-red-500 border-red-500' : ''}
+                >
+                  <Heart className={`h-5 w-5 ${isInWishlistState ? 'fill-current' : ''}`} />
+                </Button>
+              </div>
+              {/* Second Row: Buy Now and Like Button */}
+              <div className="flex space-x-4">
+                <Button
+                  size="lg"
+                  onClick={handleBuyNow}
+                  className="flex-1"
+                  variant="default"
+                >
+                  <Phone className="h-5 w-5 mr-2" />
+                  Buy Now
                 </Button>
               </div>
             </div>
@@ -273,92 +320,104 @@ const ProductDetail = () => {
           </div>
         </div>
 
-        {/* Product Details Tabs */}
+        {/* Product Details Accordion */}
         <div className="mt-16">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="specifications">Specifications</TabsTrigger>
-              <TabsTrigger value="care">Care & Instructions</TabsTrigger>
-              <TabsTrigger value="delivery">Delivery & Installation</TabsTrigger>
-              <TabsTrigger value="faq">FAQ</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="overview" className="mt-6">
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="text-lg font-semibold mb-4">Product Overview</h3>
-                  {product.overview ? (
-                    renderBlocks(product.overview.blocks)
-                  ) : (
-                    <p className="text-gray-600">No overview available for this product.</p>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="specifications" className="mt-6">
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="text-lg font-semibold mb-4">Product Specifications</h3>
+          <Accordion type="single" collapsible className="w-full space-y-4">
+            {/* Overview */}
+            <AccordionItem value="overview" className="border border-gray-200 rounded-lg">
+              <AccordionTrigger className="px-6 py-4 text-left hover:bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <span className="font-semibold text-gray-900">Product Overview</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-6 pb-6">
+                {product.overview ? (
+                  <div className="space-y-4">
+                    {renderBlocks(product.overview.blocks)}
+                  </div>
+                ) : (
+                  <p className="text-gray-600">No overview available for this product.</p>
+                )}
+              </AccordionContent>
+            </AccordionItem>
+            {/* Specifications */}
+            <AccordionItem value="specifications" className="border border-gray-200 rounded-lg">
+              <AccordionTrigger className="px-6 py-4 text-left hover:bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="font-semibold text-gray-900">Product Specifications</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-6 pb-6">
+                <div className="space-y-4">
                   {renderProductOverview()}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="care" className="mt-6">
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="text-lg font-semibold mb-4">Care & Maintenance Instructions</h3>
-                  {product.care_and_instructions ? (
-                    renderBlocks(product.care_and_instructions.blocks)
-                  ) : (
-                    <p className="text-gray-600">No care instructions available for this product.</p>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="delivery" className="mt-6">
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="text-lg font-semibold mb-4">Delivery & Installation</h3>
-                  {product.delivery_installation ? (
-                    renderBlocks(product.delivery_installation.blocks)
-                  ) : (
-                    <p className="text-gray-600">No delivery information available for this product.</p>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="faq" className="mt-6">
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="text-lg font-semibold mb-4">Frequently Asked Questions</h3>
-                  {product.faq ? (
-                    <Accordion type="single" collapsible className="w-full">
-                      {product.faq.blocks.map((faq, index) => (
-                        <AccordionItem key={index} value={`item-${index}`}>
-                          <AccordionTrigger className="text-left">
-                            {faq.title}
-                          </AccordionTrigger>
-                          <AccordionContent>
-                            <p className="text-gray-600 text-sm leading-relaxed">{faq.content}</p>
-                          </AccordionContent>
-                        </AccordionItem>
-                      ))}
-                    </Accordion>
-                  ) : (
-                    <p className="text-gray-600">No FAQ available for this product.</p>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+            {/* Care & Instructions */}
+            <AccordionItem value="care" className="border border-gray-200 rounded-lg">
+              <AccordionTrigger className="px-6 py-4 text-left hover:bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                  <span className="font-semibold text-gray-900">Care & Maintenance Instructions</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-6 pb-6">
+                {product.care_and_instructions ? (
+                  <div className="space-y-4">
+                    {renderBlocks(product.care_and_instructions.blocks)}
+                  </div>
+                ) : (
+                  <p className="text-gray-600">No care instructions available for this product.</p>
+                )}
+              </AccordionContent>
+            </AccordionItem>
+            {/* Delivery & Installation */}
+            <AccordionItem value="delivery" className="border border-gray-200 rounded-lg">
+              <AccordionTrigger className="px-6 py-4 text-left hover:bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                  <span className="font-semibold text-gray-900">Delivery & Installation</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-6 pb-6">
+                {product.delivery_installation ? (
+                  <div className="space-y-4">
+                    {renderBlocks(product.delivery_installation.blocks)}
+                  </div>
+                ) : (
+                  <p className="text-gray-600">No delivery information available for this product.</p>
+                )}
+              </AccordionContent>
+            </AccordionItem>
+            {/* FAQ */}
+            <AccordionItem value="faq" className="border border-gray-200 rounded-lg">
+              <AccordionTrigger className="px-6 py-4 text-left hover:bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                  <span className="font-semibold text-gray-900">Frequently Asked Questions</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-6 pb-6">
+                {product.faq ? (
+                  <div className="space-y-4">
+                    {product.faq.blocks.map((faq, index) => (
+                      <div key={index} className="border border-gray-100 rounded-lg p-4">
+                        <h4 className="font-semibold text-gray-900 mb-2">{faq.title}</h4>
+                        <p className="text-gray-600 text-sm leading-relaxed">{faq.content}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-600">No FAQ available for this product.</p>
+                )}
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </div>
 
-        {/* Terms and Conditions */}
+        {/* Terms & Conditions */}
         {product.terms_and_conditions && (
           <div className="mt-16">
             <Card>
@@ -434,4 +493,4 @@ const ProductDetail = () => {
   )
 }
 
-export default ProductDetail 
+export default ProductDetail
