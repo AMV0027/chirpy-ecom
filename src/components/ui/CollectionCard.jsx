@@ -11,7 +11,7 @@ const CollectionCard = ({ collection, getCollectionProducts }) => {
     <div className="group relative bg-white border border-gray-200 hover:border-gray-300 transition-all duration-300 min-w-[300px]">
       <Link to={`/collections/${collection.id}`} className="block">
         {/* Image Container */}
-        <div className="relative h-[400px] w-[300px] overflow-hidden bg-gray-50">
+        <div className="relative h-[400px] w-full overflow-hidden bg-gray-50">
           <img
             src={collection.image_url || 'https://placehold.co/600x600?text=Loading'}
             alt={collection.name}

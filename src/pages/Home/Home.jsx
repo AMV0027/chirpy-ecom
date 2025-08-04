@@ -333,7 +333,7 @@ const Home = () => {
       {/* Collections */}
       {!collectionsLoading && collections.length > 0 && (
         <CollectionSection
-          title="Shop by Collections"
+          title="Collections"
           collections={collections}
           viewAllLink="/collections"
           icon={Grid3X3}

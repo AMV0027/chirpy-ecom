@@ -204,43 +204,42 @@ const Products = () => {
         </div>
       </div>
 
-      {/* Trending Products */}
-      {trendingProducts.length > 0 && (
-        <ProductSection
-          title="Trending Now"
-          products={trendingProducts}
-          viewAllLink="/products?sort=trending"
-          icon={Star}
-        />
-      )}
-
-      {/* Individual Collection Sections */}
-      {!collectionsLoading && collections.map((collection) => {
-        const collectionProducts = getCollectionProducts(collection.id)
-
-        // Only show collection if it has products
-        if (collectionProducts.length === 0) return null
-
-        return (
+      <div className='p-4'>
+        {/* Trending Products */}
+        {trendingProducts.length > 0 && (
           <ProductSection
-            key={collection.id}
-            title={collection.name}
-            products={collectionProducts}
-            viewAllLink={`/collections/${collection.id}`}
-            icon={Package}
+            title="Trending Now"
+            products={trendingProducts}
+            viewAllLink="/products?sort=trending"
+            icon={Star}
           />
-        )
-      })}
+        )}
 
-      {/* All Products Grid */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="bg-white rounded-lg shadow-sm p-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">All Products</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {products.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
+        {/* Individual Collection Sections */}
+        {!collectionsLoading && collections.map((collection) => {
+          const collectionProducts = getCollectionProducts(collection.id)
+
+          // Only show collection if it has products
+          if (collectionProducts.length === 0) return null
+
+          return (
+            <ProductSection
+              key={collection.id}
+              title={collection.name}
+              products={collectionProducts}
+              viewAllLink={`/collections/${collection.id}`}
+              icon={Package}
+            />
+          )
+        })}
+      </div>
+
+      <div className="bg-white rounded-lg shadow-sm p-4">
+        <h2 className="text-xl font-semibold text-gray-900 mb-6">All Products</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {products.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
         </div>
       </div>
     </div>
