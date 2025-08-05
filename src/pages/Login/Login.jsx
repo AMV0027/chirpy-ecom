@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Mail, Lock, Eye, EyeOff, User, Phone, ArrowRight, CheckCircle, XCircle } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, User, Phone, ArrowRight } from 'lucide-react'
 import { toast } from 'sonner'
 import loginBg from '@/assets/login-bg.jpg'
 import logo from '../../assets/logo.png'
@@ -22,16 +22,11 @@ const Login = () => {
   })
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
 
   const {
-    isCheckingEmail,
-    emailExists,
-    showEmailExistsMessage,
-    checkEmailExists,
+    isLoading,
     handleLogin,
     handleRegistration,
-    clearEmailExistsMessage,
     error,
     clearError,
     isAuthenticated
@@ -48,18 +43,6 @@ const Login = () => {
     }
   }, [isAuthenticated, navigate, location])
 
-  // Check if email exists when user types in registration mode
-  useEffect(() => {
-    if (!isLoginMode && formData.email && formData.email.includes('@')) {
-      const timeoutId = setTimeout(() => {
-        checkEmailExists(formData.email)
-      }, 500)
-      return () => clearTimeout(timeoutId)
-    } else {
-      checkEmailExists('')
-    }
-  }, [formData.email, isLoginMode, checkEmailExists])
-
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -69,7 +52,6 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setIsLoading(true)
 
     try {
       if (isLoginMode) {
@@ -90,8 +72,6 @@ const Login = () => {
       }
     } catch (error) {
       toast.error(error.message || 'An error occurred')
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -104,7 +84,6 @@ const Login = () => {
       password: '',
       confirmPassword: ''
     })
-    clearEmailExistsMessage()
     clearError()
   }
 
@@ -135,14 +114,6 @@ const Login = () => {
               {error && (
                 <Alert variant="destructive" className="border-red-200 bg-red-50">
                   <AlertDescription className="text-red-800 text-sm">{error}</AlertDescription>
-                </Alert>
-              )}
-
-              {showEmailExistsMessage && (
-                <Alert variant="destructive" className="border-red-200 bg-red-50">
-                  <AlertDescription className="text-red-800 text-sm">
-                    An account with this email already exists. Please sign in instead.
-                  </AlertDescription>
                 </Alert>
               )}
 
@@ -182,33 +153,10 @@ const Login = () => {
                     placeholder="Enter your email address"
                     value={formData.email}
                     onChange={handleChange}
-                    className={`pl-10 h-11 sm:h-12 border-gray-200 focus:border-green-600 focus:ring-green-600 text-sm sm:text-base ${emailExists === true ? 'border-red-300 focus:border-red-600 focus:ring-red-600' :
-                      emailExists === false ? 'border-green-300 focus:border-green-600 focus:ring-green-600' : ''
-                      }`}
+                    className="pl-10 h-11 sm:h-12 border-gray-200 focus:border-green-600 focus:ring-green-600 text-sm sm:text-base"
                     required
                   />
                 </div>
-                {isCheckingEmail && (
-                  <div className="flex items-center text-sm text-gray-500 mt-1">
-                    <svg className="mr-1 h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Checking email...
-                  </div>
-                )}
-                {emailExists === true && !isCheckingEmail && (
-                  <div className="flex items-center text-sm text-red-600 mt-1">
-                    <XCircle className="mr-1 h-4 w-4" />
-                    Email already in use. Please sign in instead.
-                  </div>
-                )}
-                {emailExists === false && !isCheckingEmail && !isLoginMode && (
-                  <div className="flex items-center text-sm text-green-600 mt-1">
-                    <CheckCircle className="mr-1 h-4 w-4" />
-                    Email available.
-                  </div>
-                )}
               </div>
 
               {/* Phone Number - Only for Register */}

@@ -1,0 +1,12 @@
+[33mcommit 15474ab7572a772ec63066480ad167e736784f54[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m
+Author: ArunMozhi varman <129928410+AMV0027@users.noreply.github.com>
+Date:   Mon Aug 4 23:07:57 2025 +0530
+
+    fixed login
+
+ LOGIN_ENHANCEMENT.md        | 193 [32m++++++++++++++++++++++[m[31m----------------------[m
+ src/App.jsx                 |   1 [32m+[m
+ src/pages/Login/Login.jsx   | 152 [32m++++++++++++[m[31m----------------------[m
+ src/pages/Login/useLogin.js | 165 [32m+++++++++++++++++++++++++++++++++++++[m
+ src/stores/useAuthStore.js  |   6 [32m+[m[31m-[m
+ 5 files changed, 316 insertions(+), 201 deletions(-)

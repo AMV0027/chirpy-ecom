@@ -49,7 +49,6 @@ function App() {
         <Routes>
           {/* Public routes - no authentication required */}
           <Route path="/login" element={<Login />} />
-          <Route path="/auth/callback" element={<Login />} />
 
           {/* Protected routes - authentication required */}
           <Route path="/" element={
