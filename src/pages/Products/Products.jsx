@@ -234,7 +234,7 @@ const Products = () => {
         })}
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm p-4">
+      <div className="max-w-7xl mx-auto pb-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-6">All Products</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {products.map((product) => (
