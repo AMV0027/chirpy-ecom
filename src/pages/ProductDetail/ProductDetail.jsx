@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { Separator } from '@/components/ui/separator'
+import ProductCard from '@/components/ui/ProductCard'
 import useProductStore from '@/stores/useProductStore'
 import useCartStore from '@/stores/useCartStore'
 import useWishlistStore from '@/stores/useWishlistStore'
@@ -208,7 +209,7 @@ const ProductDetail = () => {
           </div>
 
           {/* Product Info */}
-          <div className="space-y-6 pt-4 md:pt-6">
+          <div className="space-y-6 pt-4 md:pt-6 p-4">
             <div className="py-4 px-4">
               <h1 className="text-3xl font-bold text-gray-900 mb-4">{product.name}</h1>
               <div className="flex items-center space-x-4 mb-4">
@@ -493,37 +494,11 @@ const ProductDetail = () => {
 
         {/* Related Products */}
         {relatedProducts.length > 0 && (
-          <div className="mt-16">
+          <div className="mt-16 p-4">
             <h2 className="text-2xl font-bold text-gray-900 mb-8">Related Products</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {relatedProducts.map((relatedProduct) => (
-                <Link key={relatedProduct.id} to={`/product/${relatedProduct.id}`}>
-                  <Card className="group hover:shadow-lg transition-all duration-300 bg-white border-gray-100 overflow-hidden">
-                    <CardHeader className="p-0 relative">
-                      <div className="aspect-square overflow-hidden bg-gray-50">
-                        <img
-                          src={relatedProduct.images?.[0] || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop'}
-                          alt={relatedProduct.name}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                        />
-                      </div>
-                    </CardHeader>
-                    <CardContent className="p-4">
-                      <h3 className="font-semibold text-gray-900 line-clamp-2 text-sm leading-tight mb-2">
-                        {relatedProduct.name}
-                      </h3>
-                      <div className="flex items-center justify-between">
-                        <span className="text-lg font-bold text-gray-900">
-                          ₹{parseFloat(relatedProduct.price).toLocaleString()}
-                        </span>
-                        <Button size="sm" className="h-8 px-3 text-xs">
-                          <ShoppingCart className="h-3 w-3 mr-1" />
-                          Add
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
+                <ProductCard key={relatedProduct.id} product={relatedProduct} />
               ))}
             </div>
           </div>
